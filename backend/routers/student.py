@@ -241,7 +241,7 @@ async def get_assignment_details(
 @router.post("/assignments/{assignment_id}/submit", status_code=status.HTTP_200_OK)
 async def submit_assignment(
     assignment_id: int,
-    submission: schemas.AssignmentSubmissionCreate,
+    submission: schemas.AssignmentSubmissionRequest,
     db: Session = Depends(get_db),
     current_user: models.Users = Depends(get_current_student)
 ):

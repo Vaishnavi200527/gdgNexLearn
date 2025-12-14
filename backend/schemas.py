@@ -363,6 +363,10 @@ class ClassAssignmentAssignment(BaseModel):
     assignment_id: int
     due_date: Optional[datetime] = None
 
+class AssignmentSubmissionRequest(BaseModel):
+    submission_url: str
+    submission_notes: Optional[str] = None
+
 class AssignmentSubmissionBase(BaseModel):
     assignment_id: int
     student_id: int
@@ -413,5 +417,127 @@ class GeneratedQuiz(BaseModel):
     difficulty: int
     questions: List[QuizQuestion]
     
+    class Config:
+        from_attributes = True
+
+# Quiz Schemas
+class QuizQuestionBase(BaseModel):
+    question_text: str
+    options: dict
+    correct_answer: str
+
+class QuizQuestionCreate(QuizQuestionBase):
+    pass
+
+class QuizQuestionResponse(QuizQuestionBase):
+    id: int
+    quiz_id: int
+
+    class Config:
+        from_attributes = True
+
+class QuizBase(BaseModel):
+    title: str
+    description: Optional[str] = None
+
+class QuizCreate(QuizBase):
+    questions: List[QuizQuestionCreate]
+
+class QuizResponse(QuizBase):
+    id: int
+    teacher_id: int
+    created_at: datetime
+    questions: List[QuizQuestionResponse]
+
+    class Config:
+        from_attributes = True
+
+class ClassQuizBase(BaseModel):
+    class_id: int
+    quiz_id: int
+    due_date: Optional[datetime] = None
+
+class ClassQuizCreate(ClassQuizBase):
+    pass
+
+class ClassQuizResponse(ClassQuizBase):
+    id: int
+    assigned_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class StudentQuizBase(BaseModel):
+    student_id: int
+    quiz_id: int
+    class_id: int
+    status: str
+    score: Optional[float] = None
+
+class StudentQuizCreate(StudentQuizBase):
+    pass
+
+class StudentQuizResponse(StudentQuizBase):
+    id: int
+    submitted_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class QuizQuestionForStudentResponse(BaseModel):
+    id: int
+    quiz_id: int
+    question_text: str
+    options: dict
+
+    class Config:
+        from_attributes = True
+
+class QuizForStudentResponse(QuizBase):
+    id: int
+    teacher_id: int
+    created_at: datetime
+    questions: List[QuizQuestionForStudentResponse]
+
+    class Config:
+        from_attributes = True
+
+class StudentQuizSubmission(BaseModel):
+    answers: Dict[int, str]
+
+# Quiz Submission and Statistics Schemas
+class QuizSubmissionResponse(StudentQuizResponse):
+    """Response model for quiz submissions list"""
+    student_name: str
+    submitted_at: Optional[datetime] = None
+    score: Optional[float] = None
+    status: str
+
+    class Config:
+        from_attributes = True
+
+class QuizSubmissionDetailResponse(QuizSubmissionResponse):
+    """Detailed response model for a single quiz submission"""
+    quiz: QuizResponse
+    answers: Dict[int, str]
+    question_stats: Optional[Dict[int, Dict[str, Any]]] = None
+
+class ShareQuizSubmissionEmail(BaseModel):
+    """Request model for sharing quiz results via email"""
+    recipient_emails: List[str]
+    message: Optional[str] = None
+
+class QuizStatisticsResponse(BaseModel):
+    """Response model for quiz statistics"""
+    quiz_id: int
+    total_submissions: int
+    average_score: float
+    passing_rate: float
+    score_distribution: Dict[str, int]  # score_range -> count
+    question_statistics: Dict[int, Dict[str, Any]]
+    average_time_spent_minutes: float
+    question_type_statistics: Dict[str, Dict[str, Any]]
+    difficulty_analysis: Dict[str, List[tuple]]
+
     class Config:
         from_attributes = True

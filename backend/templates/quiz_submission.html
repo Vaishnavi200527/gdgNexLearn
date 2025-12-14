@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Quiz Submission - {{ submission.quiz.title }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+        .header h1 {
+            margin: 0;
+            color: #2c3e50;
+        }
+        .student-info {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .score {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #27ae60;
+            text-align: center;
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #e8f5e9;
+            border-radius: 5px;
+        }
+        .question {
+            margin-bottom: 25px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .question.correct {
+            border-left: 5px solid #27ae60;
+            background-color: #e8f5e9;
+        }
+        .question.incorrect {
+            border-left: 5px solid #e74c3c;
+            background-color: #fde8e8;
+        }
+        .question-text {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .options {
+            margin-left: 20px;
+        }
+        .option {
+            margin: 5px 0;
+            padding: 5px;
+        }
+        .correct-answer {
+            background-color: #d4edda;
+            padding: 5px;
+            border-radius: 3px;
+            margin-top: 5px;
+            display: inline-block;
+        }
+        .user-answer {
+            font-weight: bold;
+        }
+        .feedback {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 3px;
+            font-style: italic;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 0.9em;
+            color: #7f8c8d;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ submission.quiz.title }}</h1>
+        <p>Submitted on: {{ submission.submitted_at.strftime('%B %d, %Y %I:%M %p') }}</p>
+    </div>
+
+    <div class="student-info">
+        <p><strong>Student:</strong> {{ submission.student.name }}</p>
+        <p><strong>Email:</strong> {{ submission.student.email }}</p>
+        <p><strong>Class:</strong> {{ submission.class_.name if submission.class_ else 'N/A' }}</p>
+    </div>
+
+    {% if submission.score is not none %}
+    <div class="score">
+        Score: {{ '%.1f'|format(submission.score) }}%
+        {% if submission.quiz.passing_score %}
+            {% if submission.score >= submission.quiz.passing_score %}
+                <div style="color: #27ae60;">Passed</div>
+            {% else %}
+                <div style="color: #e74c3c;">Not Passed (Minimum passing: {{ submission.quiz.passing_score }}%)</div>
+            {% endif %}
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <h2>Questions and Answers</h2>
+    {% for question in submission.quiz.questions %}
+        {% set question_id = question.id|string %}
+        {% set user_answer = submission.answers.get(question_id) %}
+        {% set is_correct = user_answer == question.correct_answer %}
+        
+        <div class="question {% if is_correct %}correct{% else %}incorrect{% endif %}">
+            <div class="question-text">
+                {{ loop.index }}. {{ question.question_text }}
+                {% if question.question_type %}
+                    <span style="font-weight: normal; color: #7f8c8d;">({{ question.question_type }})</span>
+                {% endif %}
+            </div>
+            
+            <div class="options">
+                {% for option_key, option_text in question.options.items() %}
+                    <div class="option">
+                        {{ option_key }}. {{ option_text }}
+                        {% if option_key == user_answer %}
+                            <span class="user-answer">(Your Answer)</span>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+
+            {% if not is_correct %}
+                <div class="correct-answer">
+                    <strong>Correct Answer:</strong> {{ question.correct_answer }}
+                </div>
+            {% endif %}
+
+            {% if submission.question_stats and question_id in submission.question_stats %}
+                {% set stats = submission.question_stats[question_id] %}
+                <div class="feedback">
+                    <p><strong>Question Statistics:</strong></p>
+                    <p>Difficulty: {{ '%.1f%'|format(stats.difficulty * 100) }} of students got this question right</p>
+                    <p>Your answer was {% if is_correct %}correct{% else %}incorrect{% endif %}</p>
+                </div>
+            {% endif %}
+        </div>
+    {% endfor %}
+
+    <div class="footer">
+        <p>This quiz was generated on {{ submission.submitted_at.strftime('%B %d, %Y') }}.</p>
+        <p>© {{ now.year }} Your Learning Platform. All rights reserved.</p>
+    </div>
+</body>
+</html>

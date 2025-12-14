@@ -144,34 +144,63 @@ def assign_project_to_class(class_id: int, assignment_data: schemas.ClassProject
 
 @router.post("/{class_id}/assign-assignment", response_model=dict)
 def assign_assignment_to_class(class_id: int, assignment_data: schemas.ClassAssignmentAssignment, db: Session = Depends(get_db)):
-    # Check if class exists
-    class_obj = db.query(models.Classes).filter(models.Classes.id == class_id).first()
-    if not class_obj:
-        raise HTTPException(status_code=404, detail="Class not found")
-    
-    # Create class-assignment assignment
-    class_assignment = models.ClassAssignments(
-        class_id=class_id,
-        assignment_id=assignment_data.assignment_id
-    )
-    db.add(class_assignment)
-    
-    # Assign to all students in the class
-    enrollments = db.query(models.ClassEnrollments).filter(
-        models.ClassEnrollments.class_id == class_id
-    ).all()
-    
-    for enrollment in enrollments:
-        student_assignment = models.StudentAssignments(
-            student_id=enrollment.student_id,
-            assignment_id=assignment_data.assignment_id,
-            status=schemas.AssignmentStatus.ASSIGNED
-        )
-        db.add(student_assignment)
+    try:
+        # Check if class exists
+        class_obj = db.query(models.Classes).filter(models.Classes.id == class_id).first()
+        if not class_obj:
+            raise HTTPException(status_code=404, detail="Class not found")
         
-    db.commit()
-    
-    return {"message": "Assignment assigned to class successfully"}
+        # Check if assignment exists
+        assignment = db.query(models.Assignments).filter(models.Assignments.id == assignment_data.assignment_id).first()
+        if not assignment:
+            raise HTTPException(status_code=404, detail="Assignment not found")
+        
+        # Check if already assigned to class
+        existing_class_assignment = db.query(models.ClassAssignments).filter(
+            models.ClassAssignments.class_id == class_id,
+            models.ClassAssignments.assignment_id == assignment_data.assignment_id
+        ).first()
+
+        if not existing_class_assignment:
+            # Create class-assignment assignment
+            class_assignment = models.ClassAssignments(
+                class_id=class_id,
+                assignment_id=assignment_data.assignment_id,
+                due_date=assignment_data.due_date
+            )
+            db.add(class_assignment)
+        elif assignment_data.due_date:
+            existing_class_assignment.due_date = assignment_data.due_date
+        
+        # Assign to all students in the class
+        enrollments = db.query(models.ClassEnrollments).filter(
+            models.ClassEnrollments.class_id == class_id
+        ).all()
+        
+        for enrollment in enrollments:
+            # Check if student already has this assignment
+            existing_student_assignment = db.query(models.StudentAssignments).filter(
+                models.StudentAssignments.student_id == enrollment.student_id,
+                models.StudentAssignments.assignment_id == assignment_data.assignment_id
+            ).first()
+            
+            if not existing_student_assignment:
+                student_assignment = models.StudentAssignments(
+                    student_id=enrollment.student_id,
+                    assignment_id=assignment_data.assignment_id,
+                    status=schemas.AssignmentStatus.ASSIGNED
+                )
+                db.add(student_assignment)
+            
+        db.commit()
+        
+        return {"message": "Assignment assigned to class successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Error assigning assignment: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
 @router.get("/{class_id}/projects", response_model=List[schemas.ProjectResponse])
 def get_class_projects(class_id: int, db: Session = Depends(get_db)):

@@ -93,6 +93,8 @@ class StudentAssignments(Base):
     status = Column(Enum(AssignmentStatus), default=AssignmentStatus.ASSIGNED)
     score = Column(Float, nullable=True)  # 0-100
     submitted_at = Column(DateTime, nullable=True)
+    submission_url = Column(String, nullable=True)
+    submission_notes = Column(String, nullable=True)
     
     # Relationships
     student = relationship("Users", back_populates="student_assignments")
@@ -281,3 +283,53 @@ class ClassProjects(Base):
     # Relationships
     class_obj = relationship("Classes", back_populates="projects")
     project = relationship("Projects")
+
+class Quiz(Base):
+    __tablename__ = 'quizzes'
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    teacher_id = Column(Integer, ForeignKey('users.id'))
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    questions = relationship('QuizQuestion', back_populates='quiz')
+    teacher = relationship('Users')
+
+class QuizQuestion(Base):
+    __tablename__ = 'quiz_questions'
+
+    id = Column(Integer, primary_key=True, index=True)
+    quiz_id = Column(Integer, ForeignKey('quizzes.id'))
+    question_text = Column(String, nullable=False)
+    options = Column(JSON, nullable=False)  # e.g., {"A": "Option 1", "B": "Option 2"}
+    correct_answer = Column(String, nullable=False) # e.g., "A"
+
+    quiz = relationship('Quiz', back_populates='questions')
+
+class ClassQuizzes(Base):
+    __tablename__ = 'class_quizzes'
+
+    id = Column(Integer, primary_key=True, index=True)
+    class_id = Column(Integer, ForeignKey('classes.id'))
+    quiz_id = Column(Integer, ForeignKey('quizzes.id'))
+    assigned_at = Column(DateTime, default=datetime.utcnow)
+    due_date = Column(DateTime)
+
+    class_obj = relationship('Classes')
+    quiz = relationship('Quiz')
+
+class StudentQuizzes(Base):
+    __tablename__ = 'student_quizzes'
+
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(Integer, ForeignKey('users.id'))
+    quiz_id = Column(Integer, ForeignKey('quizzes.id'))
+    class_id = Column(Integer, ForeignKey('classes.id'))
+    status = Column(String, default='assigned') # assigned, in-progress, submitted, graded
+    score = Column(Float, nullable=True)
+    submitted_at = Column(DateTime, nullable=True)
+
+    student = relationship('Users')
+    quiz = relationship('Quiz')
+    class_obj = relationship('Classes')
