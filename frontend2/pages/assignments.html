@@ -202,160 +202,169 @@ AMEP
 <div class="border-t border-gray-800 pt-6 mt-6">
 <a href="#" class="text-gray-400 hover:text-white text-lg py-2 transition-colors">Settings</a>
 <a href="#" id="logout-btn" class="text-gray-400 hover:text-white text-lg py-2 transition-colors">Logout</a>
-</div>
-</nav>
-</div>
-</div>
-
-<script>
-// Mobile navigation toggle functionality
-document.addEventListener('DOMContentLoaded', function() {
-const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
-const closeMobileNav = document.getElementById('close-mobile-nav');
-const mobileNavOverlay = document.getElementById('mobile-nav-overlay');
-
-if (mobileMenuToggle) {
-mobileMenuToggle.addEventListener('click', function() {
-mobileNavOverlay.classList.remove('hidden');
-});
-}
-
-if (closeMobileNav) {
-closeMobileNav.addEventListener('click', function() {
-mobileNavOverlay.classList.add('hidden');
-});
-}
-
-// Close mobile menu when clicking on a link
-const mobileLinks = mobileNavOverlay.querySelectorAll('a');
-mobileLinks.forEach(link => {
-link.addEventListener('click', function() {
-mobileNavOverlay.classList.add('hidden');
-});
-});
-
-// Highlight active nav link
-function highlightActiveNavLink() {
-const currentPage = window.location.pathname.split('/').pop();
-const navLinks = document.querySelectorAll('.nav-link');
-
-navLinks.forEach(link => {
-link.classList.remove('text-white', 'font-medium');
-link.classList.add('text-gray-300');
-
-// Map pages to their respective nav items
-const pageMap = {
-'student-dashboard.html': 'dashboard',
-'mastery-tracker.html': 'mastery',
-'assignments.html': 'assignments',
-'assignment-details.html': 'assignments',
-'projects.html': 'projects',
-'project-details.html': 'projects',
-'leaderboard.html': 'leaderboard',
-'badges.html': 'badges'
-};
-
-const pageKey = pageMap[currentPage];
-if (link.getAttribute('data-page') === pageKey) {
-link.classList.remove('text-gray-300');
-link.classList.add('text-white', 'font-medium');
-}
-});
-}
-
-// Call on page load
-highlightActiveNavLink();
-});
-</script>
-
 <script type="module">
-// Import auth service
+// Import required modules
+import { studentAPI } from '../js/api/studentApi.js';
 import { logout } from '../src/services/auth.js';
-import { studentAPI } from '../src/services/api.js';
 
-// Add logout functionality
-const logoutBtn = document.getElementById('logout-btn');
-if (logoutBtn) {
-    logoutBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        if (confirm('Are you sure you want to logout?')) {
-            logout();
-        }
-    });
-}
+// Mobile navigation functionality
+function setupMobileNavigation() {
+    const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+    const closeMobileNav = document.getElementById('close-mobile-nav');
+    const mobileNavOverlay = document.getElementById('mobile-nav-overlay');
 
-// Add logout functionality for desktop
-const desktopLogoutBtn = document.getElementById('desktop-logout-btn');
-if (desktopLogoutBtn) {
-    desktopLogoutBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        if (confirm('Are you sure you want to logout?')) {
-            logout();
-        }
-    });
-}
-</script>
-
-<script>
-// Update user name display
-document.addEventListener('DOMContentLoaded', function() {
-    updateUserNameDisplay();
-});
-
-function updateUserNameDisplay() {
-    // Get user name from localStorage
-    const userName = localStorage.getItem('userName') || 'Student';
-    
-    // Update user name in header
-    const userNameElement = document.getElementById('user-name');
-    if (userNameElement) {
-        userNameElement.textContent = userName;
+    if (mobileMenuToggle && mobileNavOverlay) {
+        mobileMenuToggle.addEventListener('click', () => {
+            mobileNavOverlay.classList.remove('hidden');
+        });
     }
+
+    if (closeMobileNav && mobileNavOverlay) {
+        closeMobileNav.addEventListener('click', () => {
+            mobileNavOverlay.classList.add('hidden');
+        });
+    }
+
+    // Close mobile menu when clicking on a link
+    if (mobileNavOverlay) {
+        const mobileLinks = mobileNavOverlay.querySelectorAll('a');
+        mobileLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                mobileNavOverlay.classList.add('hidden');
+            });
+        });
+    }
+}
+
+// Function to highlight the active navigation link
+function highlightActiveNavLink() {
+    const currentPage = window.location.pathname.split('/').pop();
+    const navLinks = document.querySelectorAll('.nav-link');
     
-    // Update user initials
-    const userInitialsElement = document.getElementById('user-initials');
-    if (userInitialsElement) {
-        const names = userName.split(' ');
-        let initials = '';
-        if (names.length > 1) {
-            initials = names[0].charAt(0) + names[names.length - 1].charAt(0);
-        } else {
-            initials = names[0].charAt(0) + names[0].charAt(1) || 'ST';
+    navLinks.forEach(link => {
+        link.classList.remove('text-white', 'font-medium');
+        link.classList.add('text-gray-300');
+        
+        // Map pages to their respective nav items
+        const pageMap = {
+            'student-dashboard.html': 'dashboard',
+            'mastery-tracker.html': 'mastery',
+            'assignments.html': 'assignments',
+            'assignment-details.html': 'assignments',
+            'projects.html': 'projects',
+            'project-details.html': 'projects',
+            'leaderboard.html': 'leaderboard',
+            'badges.html': 'badges'
+        };
+        
+        const pageKey = pageMap[currentPage];
+        if (link.getAttribute('data-page') === pageKey) {
+            link.classList.remove('text-gray-300');
+            link.classList.add('text-white', 'font-medium');
         }
-        userInitialsElement.textContent = initials.toUpperCase();
+    });
+}
+
+// Helper functions for status and difficulty
+function getStatusClass(status) {
+    switch(status?.toLowerCase()) {
+        case 'completed': return 'text-green-500';
+        case 'overdue': return 'text-red-500';
+        case 'in progress': return 'text-yellow-500';
+        default: return 'text-gray-400';
+    }
+}
+
+function getStatusText(status) {
+    if (!status) return 'Not Started';
+    return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function getDifficultyClass(difficulty) {
+    switch(difficulty?.toLowerCase()) {
+        case 'hard': return 'bg-purple-500/20 text-purple-400';
+        case 'medium': return 'bg-blue-500/20 text-blue-400';
+        case 'easy': return 'bg-green-500/20 text-green-400';
+        default: return 'bg-gray-500/20 text-gray-400';
+    }
+}
+
+// Show loading state
+function showLoadingState() {
+    const tbody = document.querySelector('tbody');
+    if (tbody) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="px-6 py-4 text-center text-gray-400">
+                    Loading assignments...
+                </td>
+            </tr>
+        `;
     }
 }
 
 // Fetch and display assignments data
 async function fetchAssignmentsData() {
     try {
-        // Show loading state
         showLoadingState();
         
-        // Get student ID from localStorage (assuming it's stored during login)
-        const studentId = parseInt(localStorage.getItem('studentId')) || 1;
+        // Get student ID from localStorage or use default (1 for testing)
+        const studentId = localStorage.getItem('studentId') || 1;
+        console.log('Fetching assignments for student ID:', studentId);
         
-        // Fetch real data from backend
-        const assignmentsData = await studentAPI.getAssignments(studentId);
+        // Call the API with the student ID
+        const response = await studentAPI.getAssignments(studentId);
+        console.log('Raw API response:', response);
         
-        // Update the UI with real data
+        // The backend might be returning the data directly as an array
+        let assignmentsData = [];
+        
+        if (Array.isArray(response)) {
+            // If response is already an array, use it directly
+            assignmentsData = response;
+        } else if (response && typeof response === 'object') {
+            // If response is an object, check for common data properties
+            if (Array.isArray(response.data)) {
+                assignmentsData = response.data;
+            } else if (Array.isArray(response.assignments)) {
+                assignmentsData = response.assignments;
+            } else if (response.items && Array.isArray(response.items)) {
+                assignmentsData = response.items;
+            } else {
+                // If we can't find an array in the response, log the response for debugging
+                console.warn('Unexpected response format, trying to use response as array');
+                assignmentsData = [response];
+            }
+        }
+        
+        console.log('Processed assignments data:', assignmentsData);
+        
+        if (!Array.isArray(assignmentsData)) {
+            console.error('Failed to parse assignments data:', assignmentsData);
+            throw new Error('Invalid response format from server');
+        }
+        
         updateAssignmentsDisplay(assignmentsData);
     } catch (error) {
         console.error('Error fetching assignments data:', error);
+        
+        // If unauthorized, redirect to login
+        if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+            console.log('Unauthorized. Redirecting to login...');
+            window.location.href = '/login.html';
+            return;
+        }
+        
         // Fallback to showing no data
         updateAssignmentsDisplay([]);
     }
 }
 
-function showLoadingState() {
-    // You can implement a loading state here if needed
-}
-
+// Update assignments display
 function updateAssignmentsDisplay(assignmentsData) {
-    // Get the table body
     const tbody = document.querySelector('tbody');
+    if (!tbody) return;
     
-    // Clear existing content
     tbody.innerHTML = '';
     
     // If no data, show appropriate message
@@ -371,7 +380,7 @@ function updateAssignmentsDisplay(assignmentsData) {
     }
     
     // Add each assignment to the table
-    assignmentsData.forEach((assignment, index) => {
+    assignmentsData.forEach((assignment) => {
         // Determine status and difficulty classes
         let statusClass, statusText;
         if (assignment.status === 'completed') {
@@ -406,14 +415,17 @@ function updateAssignmentsDisplay(assignmentsData) {
         
         // Create the HTML for this assignment
         const assignmentHTML = `
-            <tr>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
-                    <a href="assignment-details.html?id=${assignment.id}" class="hover:text-primary transition-colors">
-                        ${assignment.title}
-                    </a>
+            <tr class="hover:bg-gray-800/50 transition-colors">
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                        <div class="ml-4">
+                            <div class="text-sm font-medium text-white">${assignment.title}</div>
+                            <div class="text-sm text-gray-400">${assignment.description || 'No description'}</div>
+                        </div>
+                    </div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-[#8B949E]">${assignment.subject || 'General'}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-[#8B949E]">${dueDate}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${assignment.course || assignment.subject || 'General'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${dueDate}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm ${statusClass}">${statusText}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm">
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${difficultyClass}">
@@ -428,12 +440,134 @@ function updateAssignmentsDisplay(assignmentsData) {
     });
 }
 
-// Call the function when page loads
-document.addEventListener('DOMContentLoaded', function() {
+// Fetch and display quizzes data
+// Note: The getQuizzes method is not available in the StudentAPI class
+// This is a placeholder in case you want to implement it later
+async function fetchQuizzesData() {
+    try {
+        // For now, just show an empty list since the API endpoint doesn't exist
+        console.log('Quizzes feature is not implemented yet');
+        updateQuizzesDisplay([]);
+    } catch (error) {
+        console.error('Error in quizzes data handling:', error);
+        updateQuizzesDisplay([]);
+    }
+}
+
+function updateQuizzesDisplay(quizzesData) {
+    const tbody = document.getElementById('quizzes-tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+
+    if (!quizzesData || quizzesData.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="px-6 py-4 text-center text-gray-400">
+                    No quizzes available yet. Check back later for new quizzes.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    quizzesData.forEach(quiz => {
+        const quizHTML = `
+            <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">${quiz.quiz_id}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-[#8B949E]">${quiz.class_id}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-[#8B949E]">${quiz.status}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-[#8B949E]">${quiz.score !== null ? quiz.score + '%' : 'N/A'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                    <a href="quiz.html?id=${quiz.quiz_id}" class="text-primary hover:underline">Take Quiz</a>
+                </td>
+            </tr>
+        `;
+        tbody.insertAdjacentHTML('beforeend', quizHTML);
+    });
+}
+
+// Update user name and initials in the navigation bar
+function updateUserNameDisplay() {
+    try {
+        // Get user data from localStorage or use defaults
+        const userName = localStorage.getItem('userName') || 'John Doe';
+        const userInitials = localStorage.getItem('userInitials') || 'JD';
+        
+        // Update the user name and initials in the UI
+        const nameElement = document.getElementById('user-name');
+        const initialsElement = document.getElementById('user-initials');
+        
+        if (nameElement) nameElement.textContent = userName;
+        if (initialsElement) initialsElement.textContent = userInitials;
+    } catch (error) {
+        console.error('Error updating user display:', error);
+    }
+}
+
+// Initialize the application when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    // Setup mobile navigation
+    setupMobileNavigation();
+    
+    // Highlight active nav link
+    highlightActiveNavLink();
+    
+    // Update user info
+    updateUserNameDisplay();
+    
+    // Load assignments and quizzes
     fetchAssignmentsData();
+    
+    // Load quizzes if the function exists
+    if (typeof fetchQuizzesData === 'function') {
+        fetchQuizzesData();
+    }
+    
+    // Add logout functionality
+    const logoutButtons = [
+        document.getElementById('logout-btn'),
+        document.getElementById('desktop-logout-btn')
+    ];
+    
+    logoutButtons.forEach(button => {
+        if (button) {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (confirm('Are you sure you want to logout?')) {
+                    logout();
+                }
+            });
+        }
+    });
 });
 </script>
 
+<div class="w-full max-w-7xl mx-auto flex flex-col gap-6 mt-12">
+<!-- PageHeading -->
+<div class="flex flex-wrap justify-between items-center gap-4">
+<div class="flex flex-col gap-2">
+<h1 class="text-white text-4xl font-black leading-tight tracking-[-0.033em]">Quizzes</h1>
+<p class="text-[#8B949E] text-base font-normal leading-normal">Test your knowledge with these quizzes.</p>
+</div>
+</div>
+<!-- Table -->
+<div class="overflow-hidden rounded-lg border border-white/10 bg-[rgba(22,27,34,0.7)] backdrop-blur-sm">
+<table class="w-full">
+<thead>
+<tr class="bg-black/20">
+<th class="px-6 py-4 text-left text-xs font-medium text-[#8B949E] uppercase tracking-wider">Quiz Title</th>
+<th class="px-6 py-4 text-left text-xs font-medium text-[#8B949E] uppercase tracking-wider">Class</th>
+<th class="px-6 py-4 text-left text-xs font-medium text-[#8B949E] uppercase tracking-wider">Status</th>
+<th class="px-6 py-4 text-left text-xs font-medium text-[#8B949E] uppercase tracking-wider">Score</th>
+<th class="px-6 py-4 text-left text-xs font-medium text-[#8B949E] uppercase tracking-wider">Action</th>
+</tr>
+</thead>
+<tbody id="quizzes-tbody" class="divide-y divide-white/10">
+</tbody>
+</table>
+</div>
+</div>
 </main>
 </div>
 </body></html>

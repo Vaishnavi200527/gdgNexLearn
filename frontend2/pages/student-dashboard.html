@@ -238,9 +238,21 @@
                 document.getElementById('overall-progress').textContent = 'Loading...';
                 
                 // Containers
-                document.getElementById('subject-mastery-container').innerHTML = '<div class="text-center py-4 text-gray-400">Loading subject mastery data...</div>';
-                document.getElementById('recent-activity-container').innerHTML = '<div class="text-center py-4 text-gray-400">Loading recent activity...</div>';
-                document.getElementById('upcoming-assignments-container').innerHTML = '<div class="text-center py-4 text-gray-400">Loading upcoming assignments...</div>';
+                const masteryContainer = document.getElementById('subject-mastery-container');
+                const activityContainer = document.getElementById('recent-activity-container');
+                const contentContainer = document.getElementById('upcoming-content-container');
+                
+                if (masteryContainer) {
+                    masteryContainer.innerHTML = '<div class="text-center py-4 text-gray-400">Loading subject mastery data...</div>';
+                }
+                
+                if (activityContainer) {
+                    activityContainer.innerHTML = '<div class="text-center py-4 text-gray-400">Loading recent activity...</div>';
+                }
+                
+                if (contentContainer) {
+                    contentContainer.innerHTML = '<div class="text-center py-4 text-gray-400">Loading upcoming content...</div>';
+                }
             }
             
             function updateStatsDisplay(data) {

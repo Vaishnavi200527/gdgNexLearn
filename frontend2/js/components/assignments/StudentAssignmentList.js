@@ -1,34 +1,95 @@
+import { studentAPI } from '../../api/studentApi.js';
+
+// Fallback to global studentAPI if import fails
+const api = studentAPI || window.studentAPI;
+if (!api) {
+    console.error('studentAPI not available. Ensure studentApi.js is loaded.');
+}
+
 class StudentAssignmentList {
     constructor(containerId) {
         this.container = document.getElementById(containerId);
         this.assignments = [];
+        this.isMounted = false;
+        this.eventListeners = [];
+        this.currentFilter = 'all';
+        this.loading = false;
         this.init();
     }
 
     async init() {
-        await this.loadAssignments();
-        this.render();
-        this.setupEventListeners();
+        if (this.isMounted) return;
+        
+        this.isMounted = true;
+        try {
+            await this.loadAssignments();
+        } catch (error) {
+            console.error('Error initializing StudentAssignmentList:', error);
+            this.showError('Failed to initialize assignments. Please refresh the page.');
+        }
     }
 
     async loadAssignments() {
+        this.loading = true;
+        this.render();
         try {
-            const response = await fetch('/api/student/assignments', {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-                }
-            });
-            
-            if (!response.ok) throw new Error('Failed to load assignments');
-            this.assignments = await response.json();
-            this.assignments.sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+            // Load both regular assignments and quizzes
+            const [assignmentsResponse, quizzesResponse] = await Promise.all([
+                api.getAssignments(),
+                fetch('/student/quizzes', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                }).then(res => res.ok ? res.json() : []).catch(err => {
+                    console.warn('Failed to load quizzes:', err);
+                    return [];
+                })
+            ]);
+
+            // Process regular assignments
+            const regularAssignments = assignmentsResponse.map(a => ({
+                ...a,
+                type: 'assignment',
+                due_date: a.due_date || new Date().toISOString()
+            }));
+
+            // Process quizzes
+            const quizAssignments = quizzesResponse.map(q => ({
+                id: q.quiz_id,
+                title: q.quiz?.title || 'Quiz',
+                description: q.quiz?.description || 'No description',
+                type: 'quiz',
+                status: q.status,
+                score: q.score,
+                due_date: q.due_date || new Date().toISOString(),
+                submitted_at: q.submitted_at,
+                max_score: 100
+            }));
+
+            // Combine and sort
+            this.assignments = [...regularAssignments, ...quizAssignments]
+                .sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+
         } catch (error) {
             console.error('Error loading assignments:', error);
             this.showError('Failed to load assignments. Please try again.');
+        } finally {
+            this.loading = false;
+            this.render();
         }
     }
 
     render() {
+        if (this.loading) {
+            this.container.innerHTML = `
+                <div class="text-center p-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2">Loading assignments...</p>
+                </div>
+            `;
+            return;
+        }
+
         if (this.assignments.length === 0) {
             this.container.innerHTML = `
                 <div class="no-assignments">
@@ -45,10 +106,10 @@ class StudentAssignmentList {
                 <div class="assignments-header">
                     <h2>My Assignments</h2>
                     <div class="assignment-filters">
-                        <button class="filter-btn active" data-filter="all">All</button>
-                        <button class="filter-btn" data-filter="pending">Pending</button>
-                        <button class="filter-btn" data-filter="submitted">Submitted</button>
-                        <button class="filter-btn" data-filter="graded">Graded</button>
+                        <button class="filter-btn ${this.currentFilter === 'all' ? 'active' : ''}" data-filter="all">All</button>
+                        <button class="filter-btn ${this.currentFilter === 'pending' ? 'active' : ''}" data-filter="pending">Pending</button>
+                        <button class="filter-btn ${this.currentFilter === 'submitted' ? 'active' : ''}" data-filter="submitted">Submitted</button>
+                        <button class="filter-btn ${this.currentFilter === 'graded' ? 'active' : ''}" data-filter="graded">Graded</button>
                     </div>
                 </div>
                 
@@ -81,14 +142,17 @@ class StudentAssignmentList {
                                 
                                 <div class="assignment-actions">
                                     ${assignment.status === 'assigned' ? `
-                                        <button class="btn btn-primary btn-sm start-assignment" data-id="${assignment.id}">
-                                            Start Assignment
+                                        <button class="btn btn-primary btn-sm start-assignment" 
+                                                data-id="${assignment.id}"
+                                                data-type="${assignment.type}">
+                                            ${assignment.type === 'quiz' ? 'Start Quiz' : 'Start Assignment'}
                                         </button>
                                     ` : assignment.status === 'submitted' ? `
                                         <span class="submitted-text">Submitted on: ${new Date(assignment.submitted_at).toLocaleString()}</span>
                                     ` : assignment.status === 'graded' ? `
                                         <span class="graded-text">
-                                            Graded: ${assignment.score}/${assignment.max_score}
+                                            Graded: ${assignment.score}%
+                                            ${assignment.type === 'quiz' ? '(Auto-graded)' : ''}
                                         </span>
                                     ` : ''}
                                     
@@ -104,6 +168,8 @@ class StudentAssignmentList {
                 </div>
             </div>
         `;
+        this.setupEventListeners();
+        this.filterAssignments(this.currentFilter);
     }
     
     getStatusClass(status, isOverdue) {
@@ -122,31 +188,46 @@ class StudentAssignmentList {
     }
     
     setupEventListeners() {
+        // Remove any existing event listeners to prevent duplicates
+        this.cleanupEventListeners();
+        
         // Filter buttons
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const filter = e.target.dataset.filter;
+        const filterButtons = this.container.querySelectorAll('.filter-btn');
+        filterButtons.forEach(btn => {
+            const handler = (e) => {
+                e.preventDefault();
+                const filter = e.currentTarget.dataset.filter;
                 this.filterAssignments(filter);
                 
                 // Update active state
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-            });
+                filterButtons.forEach(b => b.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+            };
+            btn.addEventListener('click', handler);
+            this.eventListeners.push({ element: btn, event: 'click', handler });
         });
         
         // Start assignment buttons
-        this.container.addEventListener('click', async (e) => {
-            if (e.target.closest('.start-assignment')) {
-                const assignmentId = e.target.closest('.start-assignment').dataset.id;
-                await this.startAssignment(assignmentId);
-            }
+        const startButtons = this.container.querySelectorAll('.start-assignment');
+        startButtons.forEach(btn => {
+            const handler = (e) => {
+                e.preventDefault();
+                const assignmentId = e.currentTarget.dataset.id;
+                this.startAssignment(assignmentId);
+            };
+            btn.addEventListener('click', handler);
+            this.eventListeners.push({ element: btn, event: 'click', handler });
         });
     }
     
     filterAssignments(filter) {
+        this.currentFilter = filter;
         const cards = this.container.querySelectorAll('.assignment-card');
         cards.forEach(card => {
-            if (filter === 'all' || card.dataset.status === filter) {
+            const status = card.dataset.status;
+            // Map 'assigned' status to 'pending' filter
+            const effectiveStatus = status === 'assigned' ? 'pending' : status;
+            if (filter === 'all' || effectiveStatus === filter) {
                 card.style.display = '';
             } else {
                 card.style.display = 'none';
@@ -219,11 +300,16 @@ class StudentAssignmentList {
         const form = document.getElementById('assignmentSubmissionForm');
         const formData = new FormData(form);
         
+        const assignment = this.assignments.find(a => a.id == assignmentId);
+        const endpoint = assignment && assignment.type === 'quiz'
+            ? `/student/quizzes/${assignmentId}/submit`
+            : `/student/assignments/${assignmentId}/submit`;
+
         try {
-            const response = await fetch(`/api/student/assignments/${assignmentId}/submit`, {
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
                 },
                 body: formData
             });
@@ -250,7 +336,21 @@ class StudentAssignmentList {
         }
     }
     
+    cleanupEventListeners() {
+        // Remove all registered event listeners
+        this.eventListeners.forEach(({ element, event, handler }) => {
+            element.removeEventListener(event, handler);
+        });
+        this.eventListeners = [];
+    }
+
     showError(message) {
+        // Remove any existing error messages
+        const existingError = this.container.querySelector('.alert-danger');
+        if (existingError) {
+            existingError.remove();
+        }
+        
         const errorElement = document.createElement('div');
         errorElement.className = 'alert alert-danger';
         errorElement.textContent = message;
@@ -258,8 +358,16 @@ class StudentAssignmentList {
         
         // Remove error after 5 seconds
         setTimeout(() => {
-            errorElement.remove();
+            if (errorElement.parentNode) {
+                errorElement.remove();
+            }
         }, 5000);
+    }
+    
+    destroy() {
+        this.isMounted = false;
+        this.cleanupEventListeners();
+        this.container.innerHTML = '';
     }
 }
 

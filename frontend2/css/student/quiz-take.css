@@ -1,0 +1,139 @@
+/* Quiz Taking Interface Styles */
+
+/* Question Navigation */
+.question-nav-btn {
+    @apply w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium border transition-colors;
+}
+
+.question-nav-btn.active {
+    @apply bg-indigo-600 text-white border-indigo-700;
+}
+
+.question-nav-btn.answered {
+    @apply bg-green-100 text-green-800 border-green-200;
+}
+
+.question-nav-btn.current {
+    @apply ring-2 ring-offset-2 ring-indigo-500;
+}
+
+/* Question Styles */
+.question-container {
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+}
+
+.question-text {
+    @apply text-xl font-medium text-gray-900 mb-6;
+}
+
+.option-item {
+    @apply p-4 border rounded-lg mb-3 cursor-pointer transition-colors;
+}
+
+.option-item:hover {
+    @apply bg-gray-50;
+}
+
+.option-item.selected {
+    @apply bg-indigo-50 border-indigo-300;
+}
+
+.option-item.correct {
+    @apply bg-green-50 border-green-300;
+}
+
+.option-item.incorrect {
+    @apply bg-red-50 border-red-300;
+}
+
+.option-radio {
+    @apply h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300;
+}
+
+.option-label {
+    @apply ml-3 block text-gray-700;
+}
+
+/* Timer */
+.timer-warning {
+    @apply text-yellow-600;
+}
+
+.timer-danger {
+    @apply text-red-600 font-medium;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+    .question-nav-btn {
+        width: 2rem;
+        height: 2rem;
+        font-size: 0.75rem;
+    }
+    
+    .question-text {
+        font-size: 1.125rem;
+    }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.question-fade-enter {
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Loading State */
+.loading-spinner {
+    border: 3px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    border-top-color: #4f46e5;
+    width: 24px;
+    height: 24px;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Confirmation Modal */
+.modal-enter {
+    opacity: 0;
+    transform: scale(0.95);
+}
+
+.modal-enter-active {
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity 200ms ease-out, transform 200ms ease-out;
+}
+
+.modal-exit {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.modal-exit-active {
+    opacity: 0;
+    transform: scale(0.95);
+    transition: opacity 200ms ease-in, transform 200ms ease-in;
+}
+
+/* Accessibility */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}

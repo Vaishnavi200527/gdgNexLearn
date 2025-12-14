@@ -2,17 +2,38 @@ const API_BASE_URL = 'http://localhost:8000';
 
 class ApiService {
     constructor() {
-        this.token = localStorage.getItem('auth_token');
+        // Try multiple possible token storage locations
+        this.token = localStorage.getItem('access_token') || 
+                    localStorage.getItem('auth_token') ||
+                    sessionStorage.getItem('access_token') ||
+                    sessionStorage.getItem('auth_token');
     }
 
-    setToken(token) {
+    setToken(token, rememberMe = true) {
         this.token = token;
-        localStorage.setItem('auth_token', token);
+        // Store token based on rememberMe preference
+        if (rememberMe) {
+            localStorage.setItem('access_token', token);
+            // Clean up any old token storage
+            localStorage.removeItem('auth_token');
+            sessionStorage.removeItem('access_token');
+            sessionStorage.removeItem('auth_token');
+        } else {
+            sessionStorage.setItem('access_token', token);
+            // Clean up any old token storage
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('auth_token');
+            sessionStorage.removeItem('auth_token');
+        }
     }
 
     clearToken() {
         this.token = null;
+        // Clear all possible token storage locations
+        localStorage.removeItem('access_token');
         localStorage.removeItem('auth_token');
+        sessionStorage.removeItem('access_token');
+        sessionStorage.removeItem('auth_token');
     }
 
     getAuthHeader() {
@@ -22,6 +43,7 @@ class ApiService {
     async request(endpoint, options = {}) {
         const headers = {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
             ...this.getAuthHeader(),
             ...options.headers,
         };
@@ -30,21 +52,39 @@ class ApiService {
             const response = await fetch(`${API_BASE_URL}${endpoint}`, {
                 ...options,
                 headers,
+                credentials: 'include', // Important for cookies/sessions
+                mode: 'cors', // Enable CORS mode
             });
 
+            // Handle 401 Unauthorized
             if (response.status === 401) {
                 this.clearToken();
-                window.location.href = '/login.html';
+                // Only redirect if not already on the login page
+                if (!window.location.pathname.endsWith('login.html')) {
+                    window.location.href = '/login.html';
+                }
                 return null;
             }
 
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.detail || 'Something went wrong');
+            // Handle empty responses
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                if (response.ok) return null;
+                throw new Error('Invalid response from server');
             }
+
+            const data = await response.json();
+            
+            if (!response.ok) {
+                const error = new Error(data.detail || 'Something went wrong');
+                error.status = response.status;
+                error.data = data;
+                throw error;
+            }
+            
             return data;
         } catch (error) {
-            console.error('API Error:', error);
+            console.error(`API Error (${endpoint}):`, error);
             throw error;
         }
     }

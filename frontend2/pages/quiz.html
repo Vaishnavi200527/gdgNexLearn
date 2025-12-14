@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Take Quiz</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0df2df",
+                        "background-dark": "#102221",
+                    },
+                    fontFamily: { "display": ["Lexend", "sans-serif"] },
+                    borderRadius: { "DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-dark font-display text-white">
+<div class="min-h-screen bg-[#0B1120] text-white">
+    <!-- Header -->
+    <header class="border-b border-indigo-500/20 backdrop-blur-sm bg-[#0F172A]/30">
+        <!-- Header content from assignments.html -->
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-12">
+        <div id="quiz-container" class="w-full max-w-4xl mx-auto flex flex-col gap-6">
+            <h1 id="quiz-title" class="text-white text-4xl font-black leading-tight tracking-[-0.033em]">Quiz</h1>
+            <div id="questions-container"></div>
+            <button id="submit-quiz" class="bg-primary text-[#0D1117] font-bold py-3 px-6 rounded-full hover:scale-105 transition-transform">Submit Quiz</button>
+        </div>
+        <div id="result-container" class="hidden w-full max-w-4xl mx-auto text-center">
+            <h2 class="text-white text-3xl font-bold mb-4">Quiz Submitted!</h2>
+            <p class="text-2xl">Your score: <span id="score" class="font-bold text-primary"></span></p>
+        </div>
+    </main>
+</div>
+
+<script type="module" src="../js/quiz.js"></script>
+</body>
+</html>
