@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Create Class</title>
+</head>
+<body>
+    <h1>Test Create Class</h1>
+    <button id="test-btn">Test Create Class</button>
+    <div id="result"></div>
+
+    <script type="module">
+        // Import API service
+        import { teacherAPI } from './frontend2/src/services/api.js';
+        
+        document.getElementById('test-btn').addEventListener('click', async function() {
+            try {
+                // First, let's check if we're authenticated
+                const token = localStorage.getItem('authToken');
+                const role = localStorage.getItem('userRole');
+                
+                document.getElementById('result').innerHTML = `
+                    <p>Token: ${token ? 'Present' : 'Missing'}</p>
+                    <p>Role: ${role || 'None'}</p>
+                `;
+                
+                if (!token) {
+                    document.getElementById('result').innerHTML += '<p style="color: red;">No auth token found!</p>';
+                    return;
+                }
+                
+                if (role !== 'teacher') {
+                    document.getElementById('result').innerHTML += '<p style="color: red;">Not logged in as teacher!</p>';
+                    return;
+                }
+                
+                // Try to create a class
+                const classData = {
+                    name: "Test Class from Frontend",
+                    description: "Testing class creation from frontend",
+                    teacher_id: 9  // This should be overridden by backend
+                };
+                
+                document.getElementById('result').innerHTML += '<p>Creating class...</p>';
+                
+                const result = await teacherAPI.createClass(classData);
+                document.getElementById('result').innerHTML += `
+                    <p style="color: green;">Success! Class created:</p>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML += `
+                    <p style="color: red;">Error: ${error.message}</p>
+                    <pre>${error.stack}</pre>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>

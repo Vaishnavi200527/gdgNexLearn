@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AMEP Assignments List (Dark Mode)</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0df2df",
+                        "background-light": "#f5f8f8",
+                        "background-dark": "#102221",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .glow-teal { box-shadow: 0 0 10px 1px #0df2df; }
+        .glow-blue { box-shadow: 0 0 10px 1px #58A6FF; }
+        .glow-indigo { box-shadow: 0 0 10px 1px #A371F7; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    </style>
+</head>
+<body class="bg-background-dark font-display text-white">
+<div class="min-h-screen bg-[#0B1120] text-white">
+<!-- Header -->
+<header class="border-b border-indigo-500/20 backdrop-blur-sm bg-[#0F172A]/30">
+<div class="container mx-auto px-6 py-4">
+<div class="flex justify-between items-center">
+<div class="text-xl font-bold tracking-wide bg-gradient-to-r from-blue-500 via-indigo-500 to-teal-500 bg-clip-text text-transparent">
+AMEP
+</div>
+<nav class="hidden md:flex space-x-6">
+<a href="student-dashboard.html" class="text-gray-300 hover:text-white transition-colors nav-link" data-page="dashboard">Dashboard</a>
+<a href="mastery-tracker.html" class="text-gray-300 hover:text-white transition-colors nav-link" data-page="mastery">Mastery Tracker</a>
+<a href="assignments.html" class="text-white font-medium nav-link" data-page="assignments">Assignments</a>
+<a href="projects.html" class="text-gray-300 hover:text-white transition-colors nav-link" data-page="projects">Projects</a>
+<a href="leaderboard.html" class="text-gray-300 hover:text-white transition-colors nav-link" data-page="leaderboard">Leaderboard</a>
+<a href="badges.html" class="text-gray-300 hover:text-white transition-colors nav-link" data-page="badges">Badges</a>
+</nav>
+<div class="flex items-center space-x-4">
+<button id="mobile-menu-toggle" class="md:hidden text-gray-400 hover:text-white focus:outline-none">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+</svg>
+</button>
+<span class="text-gray-300 hidden sm:inline" id="user-name">John Doe</span>
+<div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center">
+<span class="font-bold" id="user-initials">JD</span>
+</div>
+<a href="#" id="desktop-logout-btn" class="hidden md:block text-gray-300 hover:text-white transition-colors">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+</svg>
+</a>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="container mx-auto px-6 py-12">
+<div class="w-full max-w-7xl mx-auto flex flex-col gap-6">
+<!-- PageHeading -->
+<div class="flex flex-wrap justify-between items-center gap-4">
+<div class="flex flex-col gap-2">
+<h1 class="text-white text-4xl font-black leading-tight tracking-[-0.033em]">Assignments</h1>
+<p class="text-[#8B949E] text-base font-normal leading-normal">Manage and track your AMEP coursework.</p>
+</div>
+<!-- SearchBar -->
+<div class="w-full max-w-sm">
+<label class="flex flex-col min-w-40 h-12">
+<div class="flex w-full flex-1 items-stretch rounded-full h-full bg-[rgba(22,27,34,0.7)] border border-white/10 backdrop-blur-sm">
+<div class="text-[#8B949E] flex items-center justify-center pl-4">
+<span class="material-symbols-outlined">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-full text-white focus:outline-0 focus:ring-0 border-none bg-transparent h-full placeholder:text-[#8B949E] px-4 pl-2 text-base font-normal leading-normal" placeholder="Search assignments..." value=""/>
+</div>
+</label>
+</div>
+</div>
+<!-- Chips -->
+<div class="flex gap-3 pt-4 border-t border-white/10">
+<button class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-full px-4 bg-primary text-[#0D1117] glow-teal">
+<p class="text-sm font-medium leading-normal">All</p>
+</button>
+<button class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-full px-4 bg-[rgba(22,27,34,0.7)] hover:bg-white/20 transition-colors">
+<p class="text-white text-sm font-medium leading-normal">In Progress</p>
+</button>
+<button class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-full px-4 bg-[rgba(22,27,34,0.7)] hover:bg-white/20 transition-colors">
+<p class="text-white text-sm font-medium leading-normal">Submitted</p>
+</button>
+<button class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-full px-4 bg-[rgba(22,27,34,0.7)] hover:bg-white/20 transition-colors">
+<p class="text-white text-sm font-medium leading-normal">Overdue</p>
+</button>
+</div>
+<!-- Table -->
+<div class="overflow-hidden rounded-lg border border-white/10 bg-[rgba(22,27,34,0.7)] backdrop-blur-sm">
+<table class="w-full">
+<thead>
+<tr class="bg-black/20">
+<th class="px-6 py-4 text-left text-xs font-medium text-[#8B949E] uppercase tracking-wider">Assignment Title</th>
+<th class="px-6 py-4 text-left text-xs font-medium text-[#8B949E] uppercase tracking-wider">Course</th>
+<th class="px-6 py-4 text-left text-xs font-medium text-[#8B949E] uppercase tracking-wider">Due Date</th>
+<th class="px-6 py-4 text-left text-xs font-medium text-[#8B949E] uppercase tracking-wider">Status</th>
+<th class="px-6 py-4 text-left text-xs font-medium text-[#8B949E] uppercase tracking-wider">Difficulty</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-white/10">
+<tr>
+<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white"><a href="assignment-details.html?id=1" class="hover:text-primary transition-colors">Chapter 3: Kinematics Problem Set</a></td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-[#8B949E]">Advanced Mechanics</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-[#8B949E]">Oct 26, 2024</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-[#8B949E]">In Progress</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm">
+<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#58A6FF]/20 text-[#58A6FF] glow-blue">Medium</span>
+</td>
+</tr>
+<tr>
+<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white"><a href="assignment-details.html?id=2" class="hover:text-primary transition-colors">Lab Report: The Pendulum</a></td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-[#8B949E]">Physics 101</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-[#8B949E]">Oct 22, 2024</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-[#8B949E]">Submitted</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm">
+<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary/20 text-primary glow-teal">Easy</span>
+</td>
+</tr>
+<tr>
+<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white"><a href="assignment-details.html?id=3" class="hover:text-primary transition-colors">Final Thesis Draft</a></td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-[#8B949E]">Research Methods</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-[#8B949E]">Nov 15, 2024</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-[#ff7b72]">Overdue</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm">
+<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#A371F7]/20 text-[#A371F7] glow-indigo">Hard</span>
+</td>
+</tr>
+<tr>
+<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white"><a href="assignment-details.html?id=4" class="hover:text-primary transition-colors">Essay: Quantum Entanglement</a></td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-[#8B949E]">Quantum Physics</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-[#8B949E]">Nov 30, 2024</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-[#8B949E]">Not Started</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm">
+<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#A371F7]/20 text-[#A371F7] glow-indigo">Hard</span>
+</td>
+</tr>
+<tr>
+<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white"><a href="assignment-details.html?id=5" class="hover:text-primary transition-colors">Calculus II Problem Set 5</a></td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-[#8B949E]">Mathematics II</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-[#8B949E]">Nov 05, 2024</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-[#8B949E]">In Progress</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm">
+<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary/20 text-primary glow-teal">Easy</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Floating Action Button -->
+<a href="submit-assignment.html" class="absolute bottom-8 right-8 w-16 h-16 bg-primary rounded-full flex items-center justify-center text-[#0D1117] glow-teal hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'wght' 500;">add</span>
+</a>
+<!-- Mobile Navigation Overlay -->
+<div id="mobile-nav-overlay" class="fixed inset-0 bg-black/80 z-50 hidden md:hidden">
+<div class="flex flex-col h-full">
+<div class="flex justify-between items-center p-6 border-b border-gray-800">
+<div class="text-xl font-bold bg-gradient-to-r from-blue-500 via-indigo-500 to-teal-500 bg-clip-text text-transparent">
+AMEP
+</div>
+<button id="close-mobile-nav" class="text-gray-400 hover:text-white">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+</svg>
+</button>
+</div>
+
+<nav class="flex-col p-6 space-y-6">
+<a href="student-dashboard.html" class="text-gray-400 hover:text-white text-lg py-2 transition-colors">Dashboard</a>
+<a href="mastery-tracker.html" class="text-gray-400 hover:text-white text-lg py-2 transition-colors">Mastery Tracker</a>
+<a href="assignments.html" class="text-white font-medium text-lg py-2 border-l-4 border-blue-500 pl-4">Assignments</a>
+<a href="projects.html" class="text-gray-400 hover:text-white text-lg py-2 transition-colors">Projects</a>
+<a href="leaderboard.html" class="text-gray-400 hover:text-white text-lg py-2 transition-colors">Leaderboard</a>
+<a href="badges.html" class="text-gray-400 hover:text-white text-lg py-2 transition-colors">Badges</a>
+<div class="border-t border-gray-800 pt-6 mt-6">
+<a href="#" class="text-gray-400 hover:text-white text-lg py-2 transition-colors">Settings</a>
+<a href="#" id="logout-btn" class="text-gray-400 hover:text-white text-lg py-2 transition-colors">Logout</a>
+<script type="module">
+// Import required modules
+import { studentAPI } from '../js/api/studentApi.js';
+import { logout } from '../src/services/auth.js';
+
+// Mobile navigation functionality
+function setupMobileNavigation() {
+    const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+    const closeMobileNav = document.getElementById('close-mobile-nav');
+    const mobileNavOverlay = document.getElementById('mobile-nav-overlay');
+
+    if (mobileMenuToggle && mobileNavOverlay) {
+        mobileMenuToggle.addEventListener('click', () => {
+            mobileNavOverlay.classList.remove('hidden');
+        });
+    }
+
+    if (closeMobileNav && mobileNavOverlay) {
+        closeMobileNav.addEventListener('click', () => {
+            mobileNavOverlay.classList.add('hidden');
+        });
+    }
+
+    // Close mobile menu when clicking on a link
+    if (mobileNavOverlay) {
+        const mobileLinks = mobileNavOverlay.querySelectorAll('a');
+        mobileLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                mobileNavOverlay.classList.add('hidden');
+            });
+        });
+    }
+}
+
+// Function to highlight the active navigation link
+function highlightActiveNavLink() {
+    const currentPage = window.location.pathname.split('/').pop();
+    const navLinks = document.querySelectorAll('.nav-link');
+    
+    navLinks.forEach(link => {
+        link.classList.remove('text-white', 'font-medium');
+        link.classList.add('text-gray-300');
+        
+        // Map pages to their respective nav items
+        const pageMap = {
+            'student-dashboard.html': 'dashboard',
+            'mastery-tracker.html': 'mastery',
+            'assignments.html': 'assignments',
+            'assignment-details.html': 'assignments',
+            'projects.html': 'projects',
+            'project-details.html': 'projects',
+            'leaderboard.html': 'leaderboard',
+            'badges.html': 'badges'
+        };
+        
+        const pageKey = pageMap[currentPage];
+        if (link.getAttribute('data-page') === pageKey) {
+            link.classList.remove('text-gray-300');
+            link.classList.add('text-white', 'font-medium');
+        }
+    });
+}
+
+// Helper functions for status and difficulty
+function getStatusClass(status) {
+    switch(status?.toLowerCase()) {
+        case 'completed': return 'text-green-500';
+        case 'overdue': return 'text-red-500';
+        case 'in progress': return 'text-yellow-500';
+        default: return 'text-gray-400';
+    }
+}
+
+function getStatusText(status) {
+    if (!status) return 'Not Started';
+    return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function getDifficultyClass(difficulty) {
+    switch(difficulty?.toLowerCase()) {
+        case 'hard': return 'bg-purple-500/20 text-purple-400';
+        case 'medium': return 'bg-blue-500/20 text-blue-400';
+        case 'easy': return 'bg-green-500/20 text-green-400';
+        default: return 'bg-gray-500/20 text-gray-400';
+    }
+}
+
+// Show loading state
+function showLoadingState() {
+    const tbody = document.querySelector('tbody');
+    if (tbody) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="px-6 py-4 text-center text-gray-400">
+                    Loading assignments...
+                </td>
+            </tr>
+        `;
+    }
+}
+
+// Fetch and display assignments data
+async function fetchAssignmentsData() {
+    try {
+        showLoadingState();
+        
+        // Get student ID from localStorage or use default (1 for testing)
+        const studentId = localStorage.getItem('studentId') || 1;
+        console.log('Fetching assignments for student ID:', studentId);
+        
+        // Call the API with the student ID
+        const response = await studentAPI.getAssignments(studentId);
+        console.log('Raw API response:', response);
+        
+        // The backend might be returning the data directly as an array
+        let assignmentsData = [];
+        
+        if (Array.isArray(response)) {
+            // If response is already an array, use it directly
+            assignmentsData = response;
+        } else if (response && typeof response === 'object') {
+            // If response is an object, check for common data properties
+            if (Array.isArray(response.data)) {
+                assignmentsData = response.data;
+            } else if (Array.isArray(response.assignments)) {
+                assignmentsData = response.assignments;
+            } else if (response.items && Array.isArray(response.items)) {
+                assignmentsData = response.items;
+            } else {
+                // If we can't find an array in the response, log the response for debugging
+                console.warn('Unexpected response format, trying to use response as array');
+                assignmentsData = [response];
+            }
+        }
+        
+        console.log('Processed assignments data:', assignmentsData);
+        
+        if (!Array.isArray(assignmentsData)) {
+            console.error('Failed to parse assignments data:', assignmentsData);
+            throw new Error('Invalid response format from server');
+        }
+        
+        updateAssignmentsDisplay(assignmentsData);
+    } catch (error) {
+        console.error('Error fetching assignments data:', error);
+        
+        // If unauthorized, redirect to login
+        if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+            console.log('Unauthorized. Redirecting to login...');
+            window.location.href = '/login.html';
+            return;
+        }
+        
+        // Fallback to showing no data
+        updateAssignmentsDisplay([]);
+    }
+}
+
+// Update assignments display
+function updateAssignmentsDisplay(assignmentsData) {
+    const tbody = document.querySelector('tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    // If no data, show appropriate message
+    if (!assignmentsData || assignmentsData.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="px-6 py-4 text-center text-gray-400">
+                    No assignments available yet. Check back later for new assignments.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    // Add each assignment to the table
+    assignmentsData.forEach((assignment) => {
+        // Determine status and difficulty classes
+        let statusClass, statusText;
+        if (assignment.status === 'completed') {
+            statusClass = 'text-[#3fb950]';
+            statusText = 'Completed';
+        } else if (assignment.due_date && new Date(assignment.due_date) < new Date()) {
+            statusClass = 'text-[#ff7b72]';
+            statusText = 'Overdue';
+        } else {
+            statusClass = 'text-[#8B949E]';
+            statusText = 'Not Started';
+        }
+        
+        let difficultyClass, difficultyText;
+        if (assignment.difficulty === 'hard') {
+            difficultyClass = 'bg-[#A371F7]/20 text-[#A371F7]';
+            difficultyText = 'Hard';
+        } else if (assignment.difficulty === 'medium') {
+            difficultyClass = 'bg-[#79c0ff]/20 text-[#79c0ff]';
+            difficultyText = 'Medium';
+        } else {
+            difficultyClass = 'bg-primary/20 text-primary';
+            difficultyText = 'Easy';
+        }
+        
+        // Format due date
+        const dueDate = assignment.due_date ? new Date(assignment.due_date).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        }) : 'N/A';
+        
+        // Create the HTML for this assignment
+        const assignmentHTML = `
+            <tr class="hover:bg-gray-800/50 transition-colors">
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                        <div class="ml-4">
+                            <div class="text-sm font-medium text-white">${assignment.title}</div>
+                            <div class="text-sm text-gray-400">${assignment.description || 'No description'}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${assignment.course || assignment.subject || 'General'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${dueDate}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm ${statusClass}">${statusText}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${difficultyClass}">
+                        ${difficultyText}
+                    </span>
+                </td>
+            </tr>
+        `;
+        
+        // Add to table
+        tbody.insertAdjacentHTML('beforeend', assignmentHTML);
+    });
+}
+
+// Fetch and display quizzes data
+// Note: The getQuizzes method is not available in the StudentAPI class
+// This is a placeholder in case you want to implement it later
+async function fetchQuizzesData() {
+    try {
+        // For now, just show an empty list since the API endpoint doesn't exist
+        console.log('Quizzes feature is not implemented yet');
+        updateQuizzesDisplay([]);
+    } catch (error) {
+        console.error('Error in quizzes data handling:', error);
+        updateQuizzesDisplay([]);
+    }
+}
+
+function updateQuizzesDisplay(quizzesData) {
+    const tbody = document.getElementById('quizzes-tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+
+    if (!quizzesData || quizzesData.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="px-6 py-4 text-center text-gray-400">
+                    No quizzes available yet. Check back later for new quizzes.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    quizzesData.forEach(quiz => {
+        const quizHTML = `
+            <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">${quiz.quiz_id}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-[#8B949E]">${quiz.class_id}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-[#8B949E]">${quiz.status}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-[#8B949E]">${quiz.score !== null ? quiz.score + '%' : 'N/A'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                    <a href="quiz.html?id=${quiz.quiz_id}" class="text-primary hover:underline">Take Quiz</a>
+                </td>
+            </tr>
+        `;
+        tbody.insertAdjacentHTML('beforeend', quizHTML);
+    });
+}
+
+// Update user name and initials in the navigation bar
+function updateUserNameDisplay() {
+    try {
+        // Get user data from localStorage or use defaults
+        const userName = localStorage.getItem('userName') || 'John Doe';
+        const userInitials = localStorage.getItem('userInitials') || 'JD';
+        
+        // Update the user name and initials in the UI
+        const nameElement = document.getElementById('user-name');
+        const initialsElement = document.getElementById('user-initials');
+        
+        if (nameElement) nameElement.textContent = userName;
+        if (initialsElement) initialsElement.textContent = userInitials;
+    } catch (error) {
+        console.error('Error updating user display:', error);
+    }
+}
+
+// Initialize the application when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    // Debug: log current auth/referrer state to help trace unexpected redirects
+    try {
+        console.debug('assignments:load', {
+            href: window.location.href,
+            referrer: document.referrer,
+            authToken: !!localStorage.getItem('authToken'),
+            userRole: localStorage.getItem('userRole'),
+            postLoginRedirect: localStorage.getItem('postLoginRedirect')
+        });
+    } catch (e) {
+        console.warn('assignments:debug failed', e);
+    }
+    // Setup mobile navigation
+    setupMobileNavigation();
+    
+    // Highlight active nav link
+    highlightActiveNavLink();
+    
+    // Update user info
+    updateUserNameDisplay();
+    
+    // Load assignments and quizzes
+    fetchAssignmentsData();
+    
+    // Load quizzes if the function exists
+    if (typeof fetchQuizzesData === 'function') {
+        fetchQuizzesData();
+    }
+    
+    // Add logout functionality
+    const logoutButtons = [
+        document.getElementById('logout-btn'),
+        document.getElementById('desktop-logout-btn')
+    ];
+    
+    logoutButtons.forEach(button => {
+        if (button) {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (confirm('Are you sure you want to logout?')) {
+                    logout();
+                }
+            });
+        }
+    });
+});
+</script>
+
+<div class="w-full max-w-7xl mx-auto flex flex-col gap-6 mt-12">
+<!-- PageHeading -->
+<div class="flex flex-wrap justify-between items-center gap-4">
+<div class="flex flex-col gap-2">
+<h1 class="text-white text-4xl font-black leading-tight tracking-[-0.033em]">Quizzes</h1>
+<p class="text-[#8B949E] text-base font-normal leading-normal">Test your knowledge with these quizzes.</p>
+</div>
+</div>
+<!-- Table -->
+<div class="overflow-hidden rounded-lg border border-white/10 bg-[rgba(22,27,34,0.7)] backdrop-blur-sm">
+<table class="w-full">
+<thead>
+<tr class="bg-black/20">
+<th class="px-6 py-4 text-left text-xs font-medium text-[#8B949E] uppercase tracking-wider">Quiz Title</th>
+<th class="px-6 py-4 text-left text-xs font-medium text-[#8B949E] uppercase tracking-wider">Class</th>
+<th class="px-6 py-4 text-left text-xs font-medium text-[#8B949E] uppercase tracking-wider">Status</th>
+<th class="px-6 py-4 text-left text-xs font-medium text-[#8B949E] uppercase tracking-wider">Score</th>
+<th class="px-6 py-4 text-left text-xs font-medium text-[#8B949E] uppercase tracking-wider">Action</th>
+</tr>
+</thead>
+<tbody id="quizzes-tbody" class="divide-y divide-white/10">
+</tbody>
+</table>
+</div>
+</div>
+</main>
+</div>
+</body></html>

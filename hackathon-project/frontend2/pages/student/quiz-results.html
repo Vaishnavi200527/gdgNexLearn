@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Results - Student Portal</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="../../css/student/quiz-results.css" rel="stylesheet">
+    <style>
+        .loading-indicator {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #4f46e5;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-2xl font-bold text-gray-900">Quiz Results</h1>
+                    <a href="/pages/student/quizzes.html" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Back to Quizzes
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="py-8">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                <!-- Loading Indicator -->
+                <div id="loadingIndicator" class="loading-indicator">
+                    <div class="spinner"></div>
+                    <span class="ml-3 text-gray-600">Loading quiz results...</span>
+                </div>
+
+                <!-- Quiz Results Container -->
+                <div id="quizResultsContainer" class="hidden">
+                    <!-- Results will be inserted here by JavaScript -->
+                </div>
+            </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="../../js/student/quiz-results.js"></script>
+</body>
+</html>
+                                <dd id="submittedOn" class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">-</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+
+                <!-- Questions & Answers -->
+                <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-8">
+                    <div class="px-4 py-5 sm:px-6">
+                        <h2 class="text-lg font-medium text-gray-900">Review Your Answers</h2>
+                    </div>
+                    <div class="border-t border-gray-200">
+                        <div id="questionsContainer" class="divide-y divide-gray-200">
+                            <!-- Questions will be inserted here by JavaScript -->
+                            <div class="text-center py-12">
+                                <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
+                                <p class="mt-2 text-gray-600">Loading your answers...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feedback & Actions -->
+                <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                    <div class="px-4 py-5 sm:p-6">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Feedback</h3>
+                        <div class="mt-2 max-w-xl text-sm text-gray-500">
+                            <p id="quizFeedback">Loading feedback...</p>
+                        </div>
+                        <div class="mt-5">
+                            <button type="button" id="retakeQuizBtn" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                <span class="material-icons mr-2 text-base">refresh</span>
+                                Retake Quiz
+                            </button>
+                            <button type="button" id="downloadResultsBtn" class="ml-3 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                <span class="material-icons mr-2 text-base">download</span>
+                                Download Results
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div id="feedbackModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Detailed Feedback</h3>
+                <button type="button" id="closeFeedbackModal" class="text-gray-400 hover:text-gray-500">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div id="detailedFeedbackContent" class="space-y-4">
+                <!-- Detailed feedback will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="../../js/utils/toast.js"></script>
+    <script src="../../js/api/studentApi.js"></script>
+    <script src="../../js/student/quiz-results.js" type="module"></script>
+</body>
+</html>

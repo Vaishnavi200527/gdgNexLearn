@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Quiz Results: {{ submission.quiz.title }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eee;
+        }
+        .header h1 {
+            color: #2c3e50;
+            margin: 0;
+        }
+        .score-container {
+            text-align: center;
+            margin: 25px 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .score {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #27ae60;
+            margin: 10px 0;
+        }
+        .pass-fail {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .pass {
+            color: #27ae60;
+        }
+        .fail {
+            color: #e74c3c;
+        }
+        .details {
+            margin: 25px 0;
+        }
+        .details p {
+            margin: 10px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 20px 0;
+            background-color: #3498db;
+            color: white !important;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            font-size: 0.9em;
+            color: #7f8c8d;
+            text-align: center;
+        }
+        .message {
+            background-color: #f0f7fb;
+            border-left: 5px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 5px 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Quiz Results: {{ submission.quiz.title }}</h1>
+    </div>
+
+    {% if sender_name %}
+    <p>Hello,</p>
+    <p>{{ sender_name }} has shared their quiz results with you:</p>
+    {% else %}
+    <p>Hello,</p>
+    <p>Here are your quiz results:</p>
+    {% endif %}
+
+    <div class="score-container">
+        <div>Your Score:</div>
+        <div class="score">{{ '%.1f'|format(submission.score) }}%</div>
+        {% if submission.quiz.passing_score is not none %}
+            {% if submission.score >= submission.quiz.passing_score %}
+                <div class="pass-fail pass">✓ Passed</div>
+            {% else %}
+                <div class="pass-fail fail">✗ Not Passed (Minimum: {{ submission.quiz.passing_score }}%)</div>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <div class="details">
+        <p><strong>Quiz:</strong> {{ submission.quiz.title }}</p>
+        <p><strong>Submitted On:</strong> {{ submission.submitted_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+        <p><strong>Student:</strong> {{ submission.student.name }}</p>
+        {% if submission.class_ %}
+        <p><strong>Class:</strong> {{ submission.class_.name }}</p>
+        {% endif %}
+    </div>
+
+    {% if message %}
+    <div class="message">
+        <p><strong>Message from {{ sender_name }}:</strong></p>
+        <p>{{ message }}</p>
+    </div>
+    {% endif %}
+
+    <div style="text-align: center;">
+        <a href="{{ base_url }}/quizzes/{{ submission.quiz.id }}/submissions/{{ submission.id }}" class="button">
+            View Detailed Results
+        </a>
+    </div>
+
+    <div class="footer">
+        <p>This is an automated message. Please do not reply to this email.</p>
+        <p>© {{ now.year }} Your Learning Platform. All rights reserved.</p>
+    </div>
+</body>
+</html>
