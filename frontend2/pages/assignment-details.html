@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AMEP Assignment Detail</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0df2df",
+                        "background-light": "#f5f8f8",
+                        "background-dark": "#111817",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    boxShadow: {
+                        'glow-primary': '0 0 15px 0 rgba(13, 242, 223, 0.5), 0 0 5px 0 rgba(13, 242, 223, 0.6)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-dark font-display">
+<div class="relative flex min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<script type="module">
+    // Import API service
+    import { studentAPI } from '../src/services/api.js';
+    
+    // Get assignment ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const assignmentId = urlParams.get('id');
+    
+    // If assignment ID exists, fetch assignment data
+    if (assignmentId) {
+        fetchAssignmentDetails(assignmentId);
+    }
+    
+    async function fetchAssignmentDetails(id) {
+        try {
+            // Get student ID from localStorage (assuming it's stored during login)
+            const studentId = parseInt(localStorage.getItem('studentId')) || 1;
+            
+            // First verify that the student has access to this assignment (based on class membership)
+            const assignments = await studentAPI.getAssignments(studentId);
+            const assignmentExists = assignments.some(a => a.id == id);
+            
+            if (!assignmentExists) {
+                // Show error message if student doesn't have access to this assignment
+                document.querySelector('h1').textContent = 'Assignment Not Found';
+                document.querySelector('p.text-[#9cbab7]').textContent = 'You do not have access to this assignment.';
+                document.querySelector('p.text-[#c1d3d1]').textContent = 'This assignment may not be assigned to your class or you may not be enrolled in the relevant course.';
+                return;
+            }
+            
+            // Fetch assignment data from backend
+            const assignment = await studentAPI.getAssignmentById(id);
+            
+            // Transform backend data to match frontend structure
+            const transformedAssignment = {
+                title: assignment.title,
+                description: assignment.description,
+                dueDate: assignment.due_date ? new Date(assignment.due_date).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                }) : 'N/A',
+                status: 'In Progress', // This would come from backend in a real implementation
+                points: assignment.points || 100,
+                objectives: [
+                    'Demonstrate understanding of core concepts',
+                    'Apply knowledge to solve practical problems',
+                    'Develop critical thinking skills'
+                ] // This would come from backend in a real implementation
+            };
+            
+            updateAssignmentDetails(transformedAssignment);
+        } catch (error) {
+            console.error('Error fetching assignment details:', error);
+            
+            // Show error message
+            document.querySelector('h1').textContent = 'Error Loading Assignment';
+            document.querySelector('p.text-[#9cbab7]').textContent = 'Failed to load assignment details.';
+            document.querySelector('p.text-[#c1d3d1]').textContent = 'Please try again later or contact your instructor.';
+        }
+    }
+    
+    function updateAssignmentDetails(assignment) {
+        // Update title
+        const titleElement = document.querySelector('h1');
+        if (titleElement) {
+            titleElement.textContent = `Assignment: ${assignment.title}`;
+        }
+        
+        // Update due date and status
+        const infoElement = document.querySelector('p.text-[#9cbab7]');
+        if (infoElement) {
+            infoElement.innerHTML = `Due: ${assignment.dueDate} | <span class="text-yellow-400">${assignment.status}</span> | ${assignment.points} Points`;
+        }
+        
+        // Update description
+        const descriptionElement = document.querySelector('p.text-[#c1d3d1]');
+        if (descriptionElement) {
+            descriptionElement.textContent = assignment.description;
+        }
+        
+        // Update breadcrumbs
+        const breadcrumbElement = document.querySelector('span.text-white:last-child');
+        if (breadcrumbElement) {
+            breadcrumbElement.textContent = assignment.title;
+        }
+        
+        // Update learning objectives
+        const objectiveElements = document.querySelectorAll('h3.font-bold');
+        if (objectiveElements.length >= 3 && assignment.objectives.length >= 3) {
+            for (let i = 0; i < 3; i++) {
+                objectiveElements[i].textContent = assignment.objectives[i];
+            }
+        }
+    }
+</script>
+<header class="border-b border-indigo-500/20 backdrop-blur-sm bg-[#0F172A]/30">
+<div class="container mx-auto px-6 py-4">
+<div class="flex justify-between items-center">
+<div class="text-xl font-bold tracking-wide bg-gradient-to-r from-blue-500 via-indigo-500 to-teal-500 bg-clip-text text-transparent">
+AMEP
+</div>
+<nav class="hidden md:flex space-x-6">
+<a href="student-dashboard.html" class="text-gray-300 hover:text-white transition-colors nav-link" data-page="dashboard">Dashboard</a>
+<a href="mastery-tracker.html" class="text-gray-300 hover:text-white transition-colors nav-link" data-page="mastery">Mastery Tracker</a>
+<a href="assignments.html" class="text-white font-medium nav-link" data-page="assignments">Assignments</a>
+<a href="projects.html" class="text-gray-300 hover:text-white transition-colors nav-link" data-page="projects">Projects</a>
+<a href="leaderboard.html" class="text-gray-300 hover:text-white transition-colors nav-link" data-page="leaderboard">Leaderboard</a>
+<a href="badges.html" class="text-gray-300 hover:text-white transition-colors nav-link" data-page="badges">Badges</a>
+</nav>
+<div class="flex items-center space-x-4">
+<button id="mobile-menu-toggle" class="md:hidden text-gray-400 hover:text-white focus:outline-none">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+</svg>
+</button>
+<span class="text-gray-300 hidden sm:inline" id="user-name">John Doe</span>
+<div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center">
+<span class="font-bold" id="user-initials">JD</span>
+</div>
+<a href="#" id="desktop-logout-btn" class="hidden md:block text-gray-300 hover:text-white transition-colors">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+</svg>
+</a>
+</div>
+</div>
+</div>
+</header>
+<main class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+<div class="flex flex-wrap gap-2 mb-8">
+<a class="text-[#9cbab7] text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">Courses</a>
+<span class="text-[#9cbab7] text-sm font-medium leading-normal">/</span>
+<a class="text-[#9cbab7] text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">CS 101</a>
+<span class="text-[#9cbab7] text-sm font-medium leading-normal">/</span>
+<a class="text-[#9cbab7] text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">Assignments</a>
+<span class="text-[#9cbab7] text-sm font-medium leading-normal">/</span>
+<span class="text-white text-sm font-medium leading-normal">Generative Art with p5.js</span>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+<!-- Left Column: Information -->
+<div class="flex flex-col gap-8">
+<div>
+<h1 class="text-white text-4xl lg:text-5xl font-black tracking-tighter text-shadow-[0_0_15px_rgba(13,242,223,0.4)]">Assignment: Generative Art with p5.js</h1>
+<p class="text-[#9cbab7] text-base font-normal leading-normal mt-3">Due: Dec 15, 2024 | <span class="text-yellow-400">In Progress</span> | 100 Points</p>
+</div>
+<div class="bg-white/5 backdrop-blur-md rounded-xl border border-white/10 p-6">
+<h2 class="text-white text-xl font-bold mb-3">Description</h2>
+<p class="text-[#c1d3d1] text-base font-normal leading-relaxed">This assignment challenges you to create a dynamic, interactive piece of generative art using the p5.js library. Explore concepts of randomness, loops, and user input to build a unique visual experience. The goal is to apply fundamental programming concepts in a creative context.</p>
+</div>
+<div class="flex flex-col gap-4">
+<h2 class="text-white text-xl font-bold">Learning Objectives</h2>
+<div class="grid sm:grid-cols-2 gap-4">
+<div class="relative p-5 bg-[#1a2e2c] border border-primary/50 rounded-lg overflow-hidden transition-all hover:border-primary">
+<div class="absolute -top-1 -right-1 w-16 h-16 bg-primary/20 rounded-bl-full blur-2xl"></div>
+<div class="flex items-center gap-4">
+<div class="flex-shrink-0 text-primary">
+<span class="material-symbols-outlined text-3xl">code</span>
+</div>
+<div>
+<h3 class="font-bold text-white">p5.js Basics</h3>
+<p class="text-sm text-[#9cbab7]">Understand the setup and draw loops.</p>
+</div>
+</div>
+</div>
+<div class="relative p-5 bg-[#1a2e2c] border border-primary/50 rounded-lg overflow-hidden transition-all hover:border-primary">
+<div class="absolute -top-1 -right-1 w-16 h-16 bg-primary/20 rounded-bl-full blur-2xl"></div>
+<div class="flex items-center gap-4">
+<div class="flex-shrink-0 text-primary">
+<span class="material-symbols-outlined text-3xl">gesture</span>
+</div>
+<div>
+<h3 class="font-bold text-white">Interactivity</h3>
+<p class="text-sm text-[#9cbab7]">Use mouse and keyboard inputs.</p>
+</div>
+</div>
+</div>
+<div class="relative p-5 bg-[#1a2e2c] border border-primary/50 rounded-lg overflow-hidden transition-all hover:border-primary">
+<div class="absolute -top-1 -right-1 w-16 h-16 bg-primary/20 rounded-bl-full blur-2xl"></div>
+<div class="flex items-center gap-4">
+<div class="flex-shrink-0 text-primary">
+<span class="material-symbols-outlined text-3xl">shuffle</span>
+</div>
+<div>
+<h3 class="font-bold text-white">Randomness</h3>
+<p class="text-sm text-[#9cbab7]">Implement random functions for variety.</p>
+</div>
+</div>
+</div>
+<div class="relative p-5 bg-[#1a2e2c] border border-primary/50 rounded-lg overflow-hidden transition-all hover:border-primary">
+<div class="absolute -top-1 -right-1 w-16 h-16 bg-primary/20 rounded-bl-full blur-2xl"></div>
+<div class="flex items-center gap-4">
+<div class="flex-shrink-0 text-primary">
+<span class="material-symbols-outlined text-3xl">palette</span>
+</div>
+<div>
+<h3 class="font-bold text-white">Color Theory</h3>
+<p class="text-sm text-[#9cbab7]">Apply color to create mood and focus.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Workspace -->
+<div class="flex flex-col bg-[#162928] border border-white/10 rounded-xl overflow-hidden min-h-[700px]">
+<div class="flex-grow flex flex-col">
+<div class="p-4 border-b border-white/10">
+<h3 class="text-lg font-bold text-white">Your Workspace</h3>
+<p class="text-sm text-[#9cbab7]">Complete the task in the editor below.</p>
+</div>
+<div class="flex-grow bg-[#111817] p-2 relative">
+<img alt="A dark-themed code editor displaying JavaScript code with syntax highlighting in teal, blue, and purple colors. The code includes a setup function and a draw function, characteristic of a p5.js sketch." class="absolute inset-0 w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8ICxOpPLGUmMJl1Dhc7D7p8rK14lK_h3UoSLGbNuG3KsbmI25NfQGCMzXoBdKsu1zBAUzEgmrGEibLn3RURQioTk56MOL0fxt1SmGLMMVcq_s_b2if4b1i8SzyJfQ7Ui9JysYoe5XAnf1fqgrLM7XejLMb-xK9y7Va0jPCkp8ilPFdQQ5mLHlEiRlasBhJa-Jg2mWwvnKyF3u44-4a5o9UQjkoe6vMa0h3X-j40MSb_1cFXtJNorim6GAnemrodWpJSV1AAguA9I"/>
+</div>
+<div class="p-4 border-t border-white/10 flex items-center justify-end gap-3">
+<button class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary/20 text-primary text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/30 transition-colors">
+<span class="truncate">Save Draft</span>
+</button>
+<button class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-background-dark text-sm font-bold leading-normal tracking-[0.015em] shadow-glow-primary hover:bg-opacity-80 transition-opacity">
+<span class="truncate">Submit Assignment</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Mobile Navigation Overlay -->
+<div id="mobile-nav-overlay" class="fixed inset-0 bg-black/80 z-50 hidden md:hidden">
+<div class="flex flex-col h-full">
+<div class="flex justify-between items-center p-6 border-b border-gray-800">
+<div class="text-xl font-bold bg-gradient-to-r from-blue-500 via-indigo-500 to-teal-500 bg-clip-text text-transparent">
+AMEP
+</div>
+<button id="close-mobile-nav" class="text-gray-400 hover:text-white">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+</svg>
+</button>
+</div>
+
+<nav class="flex-col p-6 space-y-6">
+<a href="student-dashboard.html" class="text-gray-400 hover:text-white text-lg py-2 transition-colors">Dashboard</a>
+<a href="mastery-tracker.html" class="text-gray-400 hover:text-white text-lg py-2 transition-colors">Mastery Tracker</a>
+<a href="assignments.html" class="text-white font-medium text-lg py-2 border-l-4 border-blue-500 pl-4">Assignments</a>
+<a href="projects.html" class="text-gray-400 hover:text-white text-lg py-2 transition-colors">Projects</a>
+<a href="leaderboard.html" class="text-gray-400 hover:text-white text-lg py-2 transition-colors">Leaderboard</a>
+<a href="badges.html" class="text-gray-400 hover:text-white text-lg py-2 transition-colors">Badges</a>
+<div class="border-t border-gray-800 pt-6 mt-6">
+<a href="#" class="text-gray-400 hover:text-white text-lg py-2 transition-colors">Settings</a>
+<a href="#" id="logout-btn" class="text-gray-400 hover:text-white text-lg py-2 transition-colors">Logout</a>
+</div>
+</nav>
+</div>
+</div>
+
+<script>
+// Mobile navigation toggle functionality
+document.addEventListener('DOMContentLoaded', function() {
+const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+const closeMobileNav = document.getElementById('close-mobile-nav');
+const mobileNavOverlay = document.getElementById('mobile-nav-overlay');
+
+if (mobileMenuToggle) {
+mobileMenuToggle.addEventListener('click', function() {
+mobileNavOverlay.classList.remove('hidden');
+});
+}
+
+if (closeMobileNav) {
+closeMobileNav.addEventListener('click', function() {
+mobileNavOverlay.classList.add('hidden');
+});
+}
+
+// Close mobile menu when clicking on a link
+const mobileLinks = mobileNavOverlay.querySelectorAll('a');
+mobileLinks.forEach(link => {
+link.addEventListener('click', function() {
+mobileNavOverlay.classList.add('hidden');
+});
+});
+
+// Highlight active nav link
+function highlightActiveNavLink() {
+const currentPage = window.location.pathname.split('/').pop();
+const navLinks = document.querySelectorAll('.nav-link');
+
+navLinks.forEach(link => {
+link.classList.remove('text-white', 'font-medium');
+link.classList.add('text-gray-300');
+
+// Map pages to their respective nav items
+const pageMap = {
+'student-dashboard.html': 'dashboard',
+'mastery-tracker.html': 'mastery',
+'assignments.html': 'assignments',
+'assignment-details.html': 'assignments',
+'projects.html': 'projects',
+'project-details.html': 'projects',
+'leaderboard.html': 'leaderboard',
+'badges.html': 'badges'
+};
+
+const pageKey = pageMap[currentPage];
+if (link.getAttribute('data-page') === pageKey) {
+link.classList.remove('text-gray-300');
+link.classList.add('text-white', 'font-medium');
+}
+});
+}
+
+// Call on page load
+highlightActiveNavLink();
+});
+</script>
+
+<script type="module">
+// Import auth service
+import { logout } from '../src/services/auth.js';
+
+// Add logout functionality
+const logoutBtn = document.getElementById('logout-btn');
+if (logoutBtn) {
+logoutBtn.addEventListener('click', function(e) {
+e.preventDefault();
+if (confirm('Are you sure you want to logout?')) {
+logout();
+}
+});
+}
+
+// Add logout functionality for desktop
+const desktopLogoutBtn = document.getElementById('desktop-logout-btn');
+if (desktopLogoutBtn) {
+desktopLogoutBtn.addEventListener('click', function(e) {
+e.preventDefault();
+if (confirm('Are you sure you want to logout?')) {
+logout();
+}
+});
+}
+</script>
+
+<script>
+// Update user name display
+document.addEventListener('DOMContentLoaded', function() {
+updateUserNameDisplay();
+});
+
+function updateUserNameDisplay() {
+// Get user name from localStorage
+const userName = localStorage.getItem('userName') || 'Student';
+
+// Update user name in header
+const userNameElement = document.getElementById('user-name');
+if (userNameElement) {
+userNameElement.textContent = userName;
+}
+
+// Update user initials
+const userInitialsElement = document.getElementById('user-initials');
+if (userInitialsElement) {
+const names = userName.split(' ');
+let initials = '';
+if (names.length > 1) {
+initials = names[0].charAt(0) + names[names.length - 1].charAt(0);
+} else {
+initials = names[0].charAt(0) + names[0].charAt(1) || 'ST';
+}
+userInitialsElement.textContent = initials.toUpperCase();
+}
+}
+</script>
+
+</main>
+</div>
+</div>
+</body></html>

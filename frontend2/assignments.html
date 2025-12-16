@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assignment Management System</title>
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/components/assignments.css">
+    
+    <!-- JavaScript Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
+    <!-- Main App Script (type="module" is required for ES modules) -->
+    <script type="module" src="js/main.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="#" class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>EduManage</span>
+                </a>
+                
+                <div class="user-menu">
+                    <div id="notificationContainer"></div>
+                    <div class="user-info">
+                        <div class="user-avatar" id="userAvatar">U</div>
+                        <div>
+                            <div class="user-name" id="userName">User Name</div>
+                            <div class="user-role" id="userRole">teacher</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+            <div class="page-header">
+                <h1 class="page-title">Assignment Management</h1>
+                <button id="createAssignmentBtn" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Create Assignment
+                </button>
+            </div>
+            
+            <!-- Assignment List Container -->
+            <div id="assignmentListContainer">
+                <!-- Student assignments will be loaded here -->
+            </div>
+            
+            <!-- Assignment Form Container (initially hidden) -->
+            <div id="assignmentFormContainer" style="display: none;"></div>
+        </div>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>EduManage</h3>
+                    <p>Empowering educators and students with a comprehensive learning management system.</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">Dashboard</a></li>
+                        <li><a href="#">Assignments</a></li>
+                        <li><a href="#">Grades</a></li>
+                        <li><a href="#">Calendar</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Support</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">Help Center</a></li>
+                        <li><a href="#">Contact Us</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
+                        <li><a href="#">Terms of Service</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="copyright">
+                &copy; 2023 EduManage. All rights reserved.
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

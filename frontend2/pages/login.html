@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AMEP Login Page (Dark Mode)</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .glow-border {
+            box-shadow: 0 0 15px 2px rgba(45, 212, 191, 0.3), 0 0 5px 1px rgba(45, 212, 191, 0.2);
+        }
+        .btn-glow:hover {
+            box-shadow: 0 0 20px 5px rgba(99, 102, 241, 0.4);
+        }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#0df2df",
+              "background-light": "#f5f8f8",
+              "background-dark": "#0F172A",
+            },
+            fontFamily: {
+              "display": ["Lexend", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+</head>
+<body class="font-display">
+<div class="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-background-dark p-4 sm:p-6">
+<div class="absolute inset-0 z-0 h-full w-full">
+<img alt="Abstract background with teal and blue light trails resembling code or data streams" class="h-full w-full object-cover opacity-10" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDrAGsrup0SORZt6wTns1V6DE_zT8p_ysgc3liNcblqlbqPgENRvumCVG3f2XkOXgx0dZyIh5iCztTTcfCxc8d5APYEFlBcpExLKLX5HbslSGu5ASzay0W2IhFOsWOnaNnscze3tJfnDp5Os5NqeoxomVc7cRXLaixsUMMad3F-ySBXGV55I9Oc4cs0O40yg0YsrBnGnHjUx60f23CSbYEznqioCYlE1zMBCD1RQWofJdL25wDkWy4MHh26JkzV6yR76QFP6VrGGiw"/>
+</div>
+<div class="relative z-10 w-full max-w-md rounded-xl border border-teal-500/20 bg-slate-900/10 p-8 backdrop-blur-lg glow-border">
+<div class="flex flex-col items-center space-y-8">
+<div class="flex flex-col items-center space-y-2 text-center">
+<p class="text-4xl font-black tracking-tighter text-white">Welcome Back</p>
+<p class="text-base font-normal text-white/70">Log in to AMEP</p>
+</div>
+<div class="w-full space-y-6">
+<label class="flex flex-col">
+<p class="pb-2 text-base font-medium leading-normal text-white">Email Address</p>
+<div class="flex w-full items-stretch rounded-xl bg-slate-800/50 ring-1 ring-inset ring-white/10 focus-within:ring-2 focus-within:ring-sky-500">
+<input id="email-input" class="form-input h-14 flex-1 resize-none overflow-hidden border-none bg-transparent p-4 text-base font-normal leading-normal text-white placeholder:text-white/50 focus:outline-none focus:ring-0" placeholder="Enter your email" type="email"/>
+</div>
+</label>
+<label class="flex flex-col">
+<p class="pb-2 text-base font-medium leading-normal text-white">Password</p>
+<div class="flex w-full items-stretch rounded-xl bg-slate-800/50 ring-1 ring-inset ring-white/10 focus-within:ring-2 focus-within:ring-sky-500">
+<input id="password-input" class="form-input h-14 flex-1 resize-none overflow-hidden rounded-r-none border-none bg-transparent p-4 pr-2 text-base font-normal leading-normal text-white placeholder:text-white/50 focus:outline-none focus:ring-0" placeholder="Enter your password" type="password"/>
+<div class="flex items-center justify-center pr-4 text-white/50">
+<span class="material-symbols-outlined" style="font-size: 24px;">visibility</span>
+</div>
+</div>
+</label>
+</div>
+<div class="flex w-full flex-col items-center space-y-4">
+<p class="w-full text-right text-sm font-normal leading-normal text-white/70 underline transition-colors hover:text-white">Forgot Password?</p>
+<button id="login-btn" class="btn-glow flex h-12 w-full min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 px-5 text-base font-bold leading-normal tracking-[0.015em] text-white shadow-lg transition-all duration-300">
+<span class="truncate">Login</span>
+</button>
+<p class="pt-4 text-center text-sm text-white/70">Don't have an account? <a class="font-bold text-white underline" href="signup.html">Sign Up</a></p>
+
+</div>
+</div>
+</div>
+
+<script type="module">
+    // Import API service
+    import { authAPI } from '../src/services/api.js';
+    
+    // Function to decode JWT token and extract user info
+    function parseJwt(token) {
+        try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(escape(window.atob(base64)));
+            return JSON.parse(jsonPayload);
+        } catch (e) {
+            console.error('Error parsing JWT:', e);
+            return null;
+        }
+    }
+    
+    // Login button functionality
+    document.getElementById('login-btn').addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Get form values
+        const email = document.getElementById('email-input').value;
+        const password = document.getElementById('password-input').value;
+        
+        // Simple validation
+        if (!email || !password) {
+            alert('Please enter both email and password');
+            return;
+        }
+        
+        // Show loading state
+        const loginBtn = document.getElementById('login-btn');
+        const originalText = loginBtn.innerHTML;
+        loginBtn.innerHTML = '<span class="truncate">Logging in...</span>';
+        loginBtn.disabled = true;
+        
+        // Use the authAPI.login function
+        authAPI.login({ email, password })
+            .then(data => {
+                // Parse the JWT token to get the user's actual role
+                const tokenPayload = parseJwt(data.access_token);
+                console.log('Token payload:', tokenPayload);
+                
+                // Extract role from token
+                let actualUserRole = 'student'; // default fallback
+                if (tokenPayload && tokenPayload.role) {
+                    actualUserRole = tokenPayload.role;
+                }
+                
+                console.log('Actual user role from token:', actualUserRole);
+                
+                // Store token and actual user role in localStorage
+                localStorage.setItem('authToken', data.access_token);
+                localStorage.setItem('userRole', actualUserRole);
+                localStorage.setItem('userEmail', email);
+                
+                // For demo purposes, we'll extract name from email
+                const name = email.split('@')[0];
+                localStorage.setItem('userName', name);
+                
+                // Redirect based on actual user role from token
+                if (actualUserRole === 'STUDENT') {
+                    window.location.href = 'student-dashboard.html';
+                } else {
+                    window.location.href = 'teacher-dashboard.html';
+                }
+            })
+            .catch(error => {
+                console.error('Login error:', error);
+                alert('Login failed: ' + error.message);
+                // Reset button
+                loginBtn.innerHTML = originalText;
+                loginBtn.disabled = false;
+            });
+    });
+</script>
+</body></html>

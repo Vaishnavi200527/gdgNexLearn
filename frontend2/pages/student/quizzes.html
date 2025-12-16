@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Quizzes - Student Portal</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="../../css/student/quizzes.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex">
+        <!-- Sidebar -->
+        <div class="w-64 bg-indigo-800 text-white p-4">
+            <div class="flex items-center space-x-2 p-4">
+                <i class="material-icons">school</i>
+                <span class="text-xl font-bold">Student Portal</span>
+            </div>
+            <nav class="mt-8">
+                <a href="dashboard.html" class="flex items-center space-x-2 p-3 hover:bg-indigo-700 rounded-lg">
+                    <i class="material-icons">dashboard</i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="quizzes.html" class="flex items-center space-x-2 p-3 bg-indigo-900 rounded-lg">
+                    <i class="material-icons">quiz</i>
+                    <span>My Quizzes</span>
+                </a>
+                <a href="assignments.html" class="flex items-center space-x-2 p-3 hover:bg-indigo-700 rounded-lg">
+                    <i class="material-icons">assignment</i>
+                    <span>Assignments</span>
+                </a>
+                <a href="progress.html" class="flex items-center space-x-2 p-3 hover:bg-indigo-700 rounded-lg">
+                    <i class="material-icons">trending_up</i>
+                    <span>My Progress</span>
+                </a>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 p-8">
+            <header class="flex justify-between items-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-800">My Quizzes</h1>
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <input type="text" placeholder="Search quizzes..." class="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <i class="material-icons absolute left-3 top-2.5 text-gray-400">search</i>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Quiz Filters -->
+            <div class="flex space-x-4 mb-6">
+                <button class="filter-btn active" data-filter="all">All Quizzes</button>
+                <button class="filter-btn" data-filter="pending">Pending</button>
+                <button class="filter-btn" data-filter="in-progress">In Progress</button>
+                <button class="filter-btn" data-filter="completed">Completed</button>
+            </div>
+
+            <!-- Quiz List -->
+            <div id="quizzesContainer" class="space-y-4">
+                <!-- Quizzes will be loaded here dynamically -->
+                <div class="text-center py-10">
+                    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
+                    <p class="mt-2 text-gray-600">Loading your quizzes...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quiz Card Template -->
+    <template id="quizCardTemplate">
+        <div class="quiz-card bg-white rounded-xl shadow-md overflow-hidden border-l-4 border-indigo-500 hover:shadow-lg transition-shadow duration-300" data-status="">
+            <div class="p-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-800 quiz-title"></h3>
+                        <p class="text-gray-600 mt-1 quiz-description"></p>
+                        <div class="flex items-center mt-3 text-sm text-gray-500">
+                            <i class="material-icons text-sm mr-1">class</i>
+                            <span class="quiz-class"></span>
+                            <span class="mx-2">•</span>
+                            <i class="material-icons text-sm mr-1">schedule</i>
+                            <span class="quiz-due-date"></span>
+                        </div>
+                    </div>
+                    <div class="quiz-status-badge px-3 py-1 rounded-full text-xs font-medium"></div>
+                </div>
+                <div class="mt-4 flex justify-between items-center">
+                    <div class="flex items-center">
+                        <div class="w-32 bg-gray-200 rounded-full h-2.5 mr-2">
+                            <div class="quiz-progress h-2.5 rounded-full bg-indigo-500" style="width: 0%"></div>
+                        </div>
+                        <span class="quiz-progress-text text-sm text-gray-600">0% complete</span>
+                    </div>
+                    <button class="quiz-action-btn px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Start Quiz
+                    </button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Empty State Template -->
+    <template id="emptyStateTemplate">
+        <div class="text-center py-16">
+            <div class="mx-auto w-24 h-24 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
+                <i class="material-icons text-indigo-500 text-4xl">quiz</i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900">No quizzes found</h3>
+            <p class="mt-1 text-gray-500">You don't have any quizzes assigned yet.</p>
+        </div>
+    </template>
+
+    <script src="../../js/utils/toast.js"></script>
+    <script src="../../js/api/studentApi.js"></script>
+    <script src="../../js/student/quizzes.js" type="module"></script>
+</body>
+</html>

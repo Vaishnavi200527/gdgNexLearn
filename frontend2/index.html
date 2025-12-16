@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AMEP Frontend</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-[#0B1120] text-white min-h-screen flex flex-col">
+    <div class="container mx-auto px-4 py-8 flex-grow flex flex-col items-center justify-center">
+        <div class="text-center max-w-3xl">
+            <h1 class="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-blue-500 via-indigo-500 to-teal-500 bg-clip-text text-transparent">
+                AMEP Frontend
+            </h1>
+            <p class="text-gray-400 text-lg mb-10">
+                Welcome to the AMEP educational platform. Redirecting to the landing page...
+            </p>
+            
+            <div class="bg-[#0F172A]/50 rounded-2xl border border-indigo-500/30 backdrop-blur-lg p-6 mb-8">
+                <p class="text-gray-300 mb-4">If you are not redirected automatically, please click the button below:</p>
+                <a href="pages/landing.html" class="inline-block bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-bold py-3 px-6 rounded-lg hover:opacity-90 transition-opacity">
+                    Go to Landing Page
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <footer class="bg-[#0F172A] border-t border-indigo-500/20 py-6">
+        <div class="container mx-auto px-4 text-center text-gray-500">
+            <p>© 2025 AMEP Educational Platform. All rights reserved.</p>
+        </div>
+    </footer>
+    
+    <script>
+        // Automatically redirect to landing page
+        setTimeout(function() {
+            window.location.href = 'pages/landing.html';
+        }, 2000);
+    </script>
+</body>
+</html>
