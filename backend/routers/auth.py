@@ -68,12 +68,19 @@ async def register_user(
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
+    # Convert role string to proper enum value
+    role_enum = models.UserRole.STUDENT  # default
+    if role.upper() == "TEACHER":
+        role_enum = models.UserRole.TEACHER
+    elif role.upper() == "STUDENT":
+        role_enum = models.UserRole.STUDENT
+    
     hashed_password = get_password_hash(password)
     db_user = models.Users(
         name=name,
         email=email,
         password_hash=hashed_password,
-        role=role
+        role=role_enum
     )
     db.add(db_user)
     db.commit()

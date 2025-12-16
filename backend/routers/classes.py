@@ -19,11 +19,11 @@ def create_class(
     db: Session = Depends(get_db),
     current_user: models.Users = Depends(get_current_teacher)
 ):
-    # Create new class
+    # Create new class using the authenticated user's ID
     new_class = models.Classes(
         name=class_data.name,
         description=class_data.description,
-        teacher_id=current_user.id
+        teacher_id=current_user.id  # Always use the authenticated teacher's ID
     )
     db.add(new_class)
     db.commit()

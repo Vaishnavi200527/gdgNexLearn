@@ -98,14 +98,6 @@ class QuizResults {
             // Process submission data
             this.processSubmissionData();
             
-            }
-            
-            // Insert the HTML content
-            document.getElementById('quizResultsContainer').innerHTML = response.data.html;
-            
-            // Hide the loading elements
-            document.querySelectorAll('.loading-indicator').forEach(el => el.style.display = 'none');
-            
         } catch (error) {
             console.error('Error loading quiz results:', error);
             showToast('Failed to load quiz results', 'error');

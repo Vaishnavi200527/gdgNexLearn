@@ -136,7 +136,7 @@ export const authAPI = {
       name: userData.name,
       email: userData.email,
       password: userData.password,
-      role: 'student'
+      role: userData.role || 'student'
     }),
   }),
   
@@ -238,8 +238,8 @@ export const teacherAPI = {
     body: JSON.stringify(classData),
   }),
   
-  getClasses: (teacherId) => {
-    return apiRequest(`/teacher/classes`);
+  getClasses: () => {
+    return apiRequest(`/classes/`);
   },
   
   getClassById: (classId) => apiRequest(`/classes/${classId}`),

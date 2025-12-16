@@ -329,14 +329,14 @@ class AssignmentWithClassesResponse(AssignmentResponse):
 # Class Management Schemas
 class ClassBase(BaseModel):
     name: str
-    description: Optional[str]
-    teacher_id: int
+    description: Optional[str] = None
 
 class ClassCreate(ClassBase):
     pass
 
 class ClassResponse(ClassBase):
     id: int
+    teacher_id: int
     created_at: datetime
     
     class Config:

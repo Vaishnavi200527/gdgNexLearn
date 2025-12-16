@@ -141,9 +141,6 @@
     const classSelect = document.getElementById('class-select');
     const enrollStudentBtn = document.getElementById('enroll-student-btn');
     
-    // Get teacher ID from localStorage (assuming it's stored during login)
-    const teacherId = parseInt(localStorage.getItem('teacherId')) || 1;
-    
     // Toggle create class form
     createClassBtn.addEventListener('click', () => {
         createClassForm.classList.toggle('hidden');
@@ -162,8 +159,8 @@
         try {
             const classData = {
                 name: className,
-                description: classDescription,
-                teacher_id: teacherId
+                description: classDescription
+                // Note: teacher_id is not sent from frontend as it's set by the backend from the authenticated user
             };
             
             await teacherAPI.createClass(classData);
@@ -216,7 +213,7 @@
     // Load classes
     async function loadClasses() {
         try {
-            const classes = await teacherAPI.getClasses(teacherId);
+            const classes = await teacherAPI.getClasses();
             displayClasses(classes);
             populateClassSelect(classes);
         } catch (error) {

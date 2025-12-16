@@ -63,7 +63,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
 
 async def get_current_teacher(current_user: models.Users = Depends(get_current_user)) -> models.Users:
     """Get current user if they are a teacher"""
-    if current_user.role != "teacher":
+    if current_user.role.value != "teacher":
         raise HTTPException(status_code=403, detail="Teacher access required")
     return current_user
 

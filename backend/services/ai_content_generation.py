@@ -153,10 +153,10 @@ async def call_gemini_api(prompt: str, api_key: str = None) -> dict:
         # Try to parse the JSON response
         import json
         try:
-            return json.loads(response.text)
+            response_data = json.loads(response.text)
         except json.JSONDecodeError:
             # If JSON parsing fails, create a structured response from the text
-            return {
+            response_data = {
                 "topic": "Generated Content",
                 "difficulty": 3,
                 "questions": [
@@ -169,10 +169,13 @@ async def call_gemini_api(prompt: str, api_key: str = None) -> dict:
                     }
                 ]
             }
+        return response_data
     except Exception as e:
         print(f"Error calling Gemini API: {e}")
         print(f"API Key used: {api_key[:10]}... (truncated for security)")
-        # Only fallback to simulated response if there's a real error
+        # Re-raise the exception instead of falling back
+        raise
+
 def simulate_gemini_response(prompt: str) -> dict:
     """Simulate Gemini API response with topic-appropriate questions"""
     import re

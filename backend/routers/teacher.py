@@ -171,7 +171,7 @@ def get_all_students(
     current_user: models.Users = Depends(get_current_teacher)
 ):
     """Get all students in the system"""
-    students = db.query(models.Users).filter(models.Users.role == "student").all()
+    students = db.query(models.Users).filter(models.Users.role == models.UserRole.STUDENT).all()
     return students
 
 @router.get("/teachers", response_model=List[schemas.UserResponse])
@@ -180,7 +180,7 @@ def get_all_teachers(
     current_user: models.Users = Depends(get_current_teacher)
 ):
     """Get all teachers in the system"""
-    teachers = db.query(models.Users).filter(models.Users.role == "teacher").all()
+    teachers = db.query(models.Users).filter(models.Users.role == models.UserRole.TEACHER).all()
     return teachers
 
 @router.get("/dashboard")

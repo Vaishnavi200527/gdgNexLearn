@@ -118,7 +118,7 @@
         const name = document.getElementById('name-input').value;
         const email = document.getElementById('email-input').value;
         const password = document.getElementById('password-input').value;
-        const role = document.getElementById('role-select').value.toLowerCase();
+        const role = document.getElementById('role-select').value.toUpperCase();
         
         // Simple validation
         if (!name || !email || !password) {
@@ -153,7 +153,7 @@
                 localStorage.setItem('userName', name);
                 
                 // Redirect based on selected role
-                if (role === 'student') {
+                if (role === 'STUDENT') {
                     window.location.href = 'student-dashboard.html';
                 } else {
                     window.location.href = 'teacher-dashboard.html';

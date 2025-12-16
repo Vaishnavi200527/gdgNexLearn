@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Token</title>
+</head>
+<body>
+    <h1>Debug Token</h1>
+    <button id="test-login">Test Login</button>
+    <div id="result"></div>
+
+    <script>
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                return JSON.parse(decodeURIComponent(escape(window.atob(base64))));
+            } catch (e) {
+                console.error('Error parsing JWT:', e);
+                return null;
+            }
+        }
+
+        document.getElementById('test-login').addEventListener('click', function() {
+            const email = 'teacher@example.com';
+            const password = 'teacher123';
+            
+            const credentials = new URLSearchParams();
+            credentials.append('username', email);
+            credentials.append('password', password);
+            
+            fetch('http://localhost:8000/auth/token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: credentials
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.detail || 'Login failed');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Parse the JWT token to get the user's actual role
+                const tokenPayload = parseJwt(data.access_token);
+                
+                document.getElementById('result').innerHTML = `
+                    <p><strong>Token:</strong> ${data.access_token}</p>
+                    <p><strong>Parsed Payload:</strong> ${JSON.stringify(tokenPayload, null, 2)}</p>
+                    <p><strong>Role from token:</strong> ${tokenPayload?.role}</p>
+                `;
+            })
+            .catch(error => {
+                console.error('Login error:', error);
+                document.getElementById('result').innerHTML = `<p>Error: ${error.message}</p>`;
+            });
+        });
+    </script>
+</body>
+</html>
