@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Content Adjustment Demo - EduAI Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            padding: 30px 0;
+            color: #333;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            color: #666;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            color: #4361ee;
+        }
+
+        .card-header i {
+            font-size: 1.8rem;
+        }
+
+        .card-header h2 {
+            margin: 0;
+            font-size: 1.4rem;
+        }
+
+        .metric {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #4361ee;
+            margin: 10px 0;
+        }
+
+        .metric-label {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .progress-container {
+            margin: 30px 0;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4361ee, #4cc9f0);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        .assignments {
+            margin-top: 30px;
+        }
+
+        .assignment-list {
+            list-style: none;
+        }
+
+        .assignment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .assignment-item:last-child {
+            border-bottom: none;
+        }
+
+        .assignment-info h3 {
+            margin: 0 0 5px 0;
+            color: #333;
+        }
+
+        .assignment-meta {
+            display: flex;
+            gap: 15px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .estimated-time {
+            background: #e9ecef;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+
+        .adjusted-time {
+            background: #4361ee;
+            color: white;
+        }
+
+        .controls-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .btn {
+            background: #4361ee;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn:hover {
+            background: #3a56d4;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);
+        }
+
+        .explanation {
+            background: #e7f3ff;
+            border-left: 4px solid #4361ee;
+            padding: 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 30px 0;
+        }
+
+        .explanation h3 {
+            margin-top: 0;
+            color: #4361ee;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 30px 0;
+            color: #666;
+            margin-top: 30px;
+            border-top: 1px solid #eee;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .assignment-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-tachometer-alt"></i> Dynamic Content Adjustment</h1>
+            <p>Personalized learning pacing based on your unique learning speed</p>
+        </div>
+
+        <div class="dashboard">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-user-clock"></i>
+                    <h2>Learning Speed Analysis</h2>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="learning-speed">Fast</div>
+                    <div class="metric-label">Your Learning Pace</div>
+                </div>
+                <p>Based on your engagement patterns and mastery progression, we've determined your optimal learning speed.</p>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-chart-line"></i>
+                    <h2>Progress Overview</h2>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="mastery-rate">7.2%</div>
+                    <div class="metric-label">Avg. Mastery Gain/Concept</div>
+                </div>
+                <p>Your mastery is improving consistently, indicating effective learning patterns.</p>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-cog"></i>
+                    <h2>Pacing Recommendation</h2>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="pacing-factor">1.2x</div>
+                    <div class="metric-label">Content Delivery Speed</div>
+                </div>
+                <p>We recommend slightly accelerating your content delivery to match your learning capacity.</p>
+            </div>
+        </div>
+
+        <div class="progress-container card">
+            <div class="progress-header">
+                <h2><i class="fas fa-tasks"></i> Your Learning Progress</h2>
+                <div class="learning-progress">
+                    <span>65% Complete</span>
+                </div>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: 65%"></div>
+            </div>
+        </div>
+
+        <div class="assignments card">
+            <div class="card-header">
+                <i class="fas fa-book-open"></i>
+                <h2>Adjusted Assignments</h2>
+            </div>
+            <p>Based on your learning speed, we've adjusted the timing of your assignments:</p>
+            
+            <ul class="assignment-list">
+                <li class="assignment-item" data-assignment-id="1">
+                    <div class="assignment-info">
+                        <h3>Introduction to Data Structures</h3>
+                        <div class="assignment-meta">
+                            <span><i class="fas fa-layer-group"></i> Beginner</span>
+                            <span><i class="fas fa-star"></i> 80% Mastery</span>
+                        </div>
+                    </div>
+                    <div class="estimated-time adjusted-time">25 min</div>
+                </li>
+                <li class="assignment-item" data-assignment-id="2">
+                    <div class="assignment-info">
+                        <h3>Array Operations Practice</h3>
+                        <div class="assignment-meta">
+                            <span><i class="fas fa-layer-group"></i> Intermediate</span>
+                            <span><i class="fas fa-star"></i> 65% Mastery</span>
+                        </div>
+                    </div>
+                    <div class="estimated-time adjusted-time">35 min</div>
+                </li>
+                <li class="assignment-item" data-assignment-id="3">
+                    <div class="assignment-info">
+                        <h3>Linked Lists Deep Dive</h3>
+                        <div class="assignment-meta">
+                            <span><i class="fas fa-layer-group"></i> Advanced</span>
+                            <span><i class="fas fa-star"></i> 45% Mastery</span>
+                        </div>
+                    </div>
+                    <div class="estimated-time">45 min</div>
+                </li>
+            </ul>
+        </div>
+
+        <div class="controls-container">
+            <button class="btn" id="reanalyze-button">
+                <i class="fas fa-sync"></i> Re-analyze My Learning Speed
+            </button>
+        </div>
+
+        <div class="explanation">
+            <h3><i class="fas fa-info-circle"></i> How Dynamic Content Adjustment Works</h3>
+            <p>Our system continuously monitors your learning patterns to optimize your educational experience:</p>
+            <ul>
+                <li><strong>Engagement Tracking:</strong> We analyze how much time you spend on different activities</li>
+                <li><strong>Mastery Progression:</strong> We measure how quickly your understanding improves</li>
+                <li><strong>Performance Trends:</strong> We identify patterns in your assignment completion</li>
+                <li><strong>Adaptive Pacing:</strong> We adjust content delivery speed to match your optimal learning rate</li>
+            </ul>
+            <p>This ensures you're neither overwhelmed nor bored, but always challenged at the perfect level for maximum learning efficiency.</p>
+        </div>
+
+        <div class="footer">
+            <p>EduAI Platform - Personalized Learning for Every Student</p>
+        </div>
+    </div>
+
+    <!-- Include the dynamic content adjustment component -->
+    <script src="../js/components/dynamic-content-adjustment.js"></script>
+    
+    <script>
+        // Simulate initialization when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // In a real implementation, this would connect to the backend
+            console.log('Dynamic content adjustment demo initialized');
+            
+            // Simulate some initial values
+            document.getElementById('learning-speed').textContent = 'Fast';
+            document.getElementById('mastery-rate').textContent = '7.2%';
+            document.getElementById('pacing-factor').textContent = '1.2x';
+            
+            // Add event listener to the reanalyze button
+            document.getElementById('reanalyze-button').addEventListener('click', function() {
+                // Show loading state
+                const button = this;
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+                button.disabled = true;
+                
+                // Simulate API call delay
+                setTimeout(function() {
+                    // Reset button
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                    
+                    // Show success message
+                    alert('Analysis complete! Your content pacing has been updated based on your latest learning patterns.');
+                }, 2000);
+            });
+        });
+    </script>
+</body>
+</html>

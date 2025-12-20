@@ -249,9 +249,9 @@
                         <span class="material-symbols-outlined text-[#9cb2ba]">calendar_today</span>
                         <span class="text-[#9cb2ba] text-sm">${new Date(cls.created_at).toLocaleDateString()}</span>
                     </div>
-                    <button class="text-primary text-sm font-bold hover:underline" onclick="viewClassDetails(${cls.id})">
+                    <a href="class-details.html?class_id=${cls.id}" class="text-primary text-sm font-bold hover:underline">
                         View Details
-                    </button>
+                    </a>
                 </div>
             `;
             
@@ -277,11 +277,10 @@
     
     // View class details
     window.viewClassDetails = function(classId) {
-        // For now, we'll just show an alert
-        alert('Class details feature coming soon! Class ID: ' + classId);
-        // In a real implementation, this would navigate to a class details page
+        // Navigate to class details page
+        window.location.href = `class-details.html?class_id=${classId}`;
     };
-    
+
     // Load classes when page loads
     document.addEventListener('DOMContentLoaded', () => {
         loadClasses();

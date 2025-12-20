@@ -134,6 +134,14 @@
 <div class="text-center py-8 text-[#9cb2ba]">Loading assignments...</div>
 </div>
 </div>
+
+<!-- PDF Lessons -->
+<div class="flex flex-col gap-6 mt-8">
+<h2 class="text-white text-[22px] font-bold leading-tight tracking-[-0.015em]">PDF Lessons</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="lessons-container">
+<div class="text-center py-8 text-[#9cb2ba]">Loading PDF lessons...</div>
+</div>
+</div>
 </main>
 </div>
 </div>
@@ -187,6 +195,10 @@
     // Get class ID from URL parameter
     const urlParams = new URLSearchParams(window.location.search);
     const classId = parseInt(urlParams.get('class_id'));
+    
+    console.log('Class ID from URL:', urlParams.get('class_id'));
+    console.log('Parsed class ID:', classId);
+    console.log('Class ID type:', typeof classId);
     
     if (!classId) {
         alert('Class ID not provided');
@@ -257,6 +269,8 @@
     // Load class statistics
     async function loadClassStatistics() {
         try {
+            console.log('Loading class statistics for class ID:', classId);
+            
             // Load students count
             const students = await teacherAPI.getClassStudents(classId);
             document.getElementById('total-students').textContent = students.length;
@@ -267,6 +281,7 @@
             
             // Load assignments count
             const assignments = await teacherAPI.getClassAssignments(classId);
+            console.log('Assignments for statistics:', assignments);
             document.getElementById('assigned-assignments').textContent = assignments.length;
         } catch (error) {
             console.error('Error loading class statistics:', error);
@@ -362,6 +377,7 @@
     async function loadClassAssignments() {
         try {
             const assignments = await teacherAPI.getClassAssignments(classId);
+            console.log('All class assignments:', assignments);
             displayAssignments(assignments);
         } catch (error) {
             console.error('Error loading class assignments:', error);
@@ -373,6 +389,8 @@
     function displayAssignments(assignments) {
         const container = document.getElementById('assignments-container');
         
+        console.log('Displaying assignments:', assignments);
+        
         if (!assignments || assignments.length === 0) {
             container.innerHTML = '<div class="text-center py-8 text-[#9cb2ba]">No assignments assigned to this class</div>';
             return;
@@ -381,6 +399,9 @@
         container.innerHTML = '';
         
         assignments.forEach(assignment => {
+            const title = assignment.title || 'Untitled Assignment';
+            const description = assignment.description || 'No description';
+            
             const assignmentCard = document.createElement('div');
             assignmentCard.className = 'flex flex-col gap-4 rounded-xl p-6 bg-[#283539] border border-primary/30';
             assignmentCard.innerHTML = `
@@ -389,8 +410,8 @@
                         <span class="material-symbols-outlined text-2xl">assignment</span>
                     </div>
                     <div class="flex flex-col">
-                        <p class="text-white font-bold text-lg">${assignment.title}</p>
-                        <p class="text-[#9cb2ba] text-sm">${assignment.description || 'No description'}</p>
+                        <p class="text-white font-bold text-lg">${title}</p>
+                        <p class="text-[#9cb2ba] text-sm">${description}</p>
                     </div>
                 </div>
                 <div class="flex items-center justify-between">
@@ -404,6 +425,113 @@
                 </div>
             `;
             container.appendChild(assignmentCard);
+        });
+    }
+    
+    // Load PDF lessons
+    async function loadPDLLessons() {
+        try {
+            // Get assignments and filter for PDF-based ones
+            const assignments = await teacherAPI.getClassAssignments(classId);
+            
+            // Log assignments for debugging
+            console.log('All assignments for class:', assignments);
+            
+            // Filter for PDF-based assignments based on title prefixes and keywords
+            const pdfLessons = assignments.filter(assignment => {
+                // Check for PDF indicators in title or description
+                const title = assignment.title || '';
+                const descLower = (assignment.description || '').toLowerCase();
+                
+                // Log assignment details for debugging
+                console.log('Checking assignment:', {title, description: assignment.description});
+                
+                // Check for PDF prefix in title or PDF-related keywords
+                const isPdfLesson = title.startsWith('[PDF]') || 
+                       title.toLowerCase().includes('pdf') || 
+                       descLower.includes('pdf') ||
+                       title.toLowerCase().includes('document') ||
+                       descLower.includes('document') ||
+                       title.toLowerCase().includes('notes') ||
+                       descLower.includes('notes') ||
+                       title.toLowerCase().includes('slides') ||
+                       descLower.includes('slides');
+                
+                console.log('Is PDF lesson:', isPdfLesson);
+                return isPdfLesson;
+            });
+            
+            console.log('Filtered PDF lessons:', pdfLessons);
+            displayPDLLessons(pdfLessons);
+        } catch (error) {
+            console.error('Error loading PDF lessons:', error);
+            document.getElementById('lessons-container').innerHTML = '<div class="text-center py-8 text-[#9cb2ba]">Failed to load PDF lessons</div>';
+        }
+    }
+    
+    // Display PDF lessons with metadata
+    function displayPDLLessons(lessons) {
+        const container = document.getElementById('lessons-container');
+        
+        console.log('Displaying PDF lessons:', lessons);
+        
+        if (!lessons || lessons.length === 0) {
+            container.innerHTML = '<div class="text-center py-8 text-[#9cb2ba]">No PDF lessons assigned to this class</div>';
+            return;
+        }
+        
+        container.innerHTML = '';
+        
+        lessons.forEach(lesson => {
+            // Extract metadata from the lesson object
+            const title = lesson.title || 'Untitled PDF Lesson';
+            const description = lesson.description || 'PDF-based learning material';
+            const assignedAt = lesson.assigned_at ? new Date(lesson.assigned_at).toLocaleDateString() : 'N/A';
+            const dueDate = lesson.due_date ? new Date(lesson.due_date).toLocaleDateString() : 'No due date';
+            const difficultyLevel = lesson.difficulty_level || 'N/A';
+            
+            const lessonCard = document.createElement('div');
+            lessonCard.className = 'flex flex-col gap-4 rounded-xl p-6 bg-[#283539] border border-primary/30';
+            lessonCard.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <div class="flex size-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <span class="material-symbols-outlined text-2xl">picture_as_pdf</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <p class="text-white font-bold text-lg">${title}</p>
+                        <p class="text-[#9cb2ba] text-sm">${description}</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[#9cb2ba] text-base">calendar_today</span>
+                        <span class="text-[#9cb2ba]">Assigned: ${assignedAt}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[#9cb2ba] text-base">event</span>
+                        <span class="text-[#9cb2ba]">Due: ${dueDate}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[#9cb2ba] text-base">speed</span>
+                        <span class="text-[#9cb2ba]">Difficulty: ${difficultyLevel}/5</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[#9cb2ba] text-base">school</span>
+                        <span class="text-[#9cb2ba]">Adaptive: Yes</span>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between pt-2">
+                    <button class="text-primary text-sm font-bold hover:underline flex items-center">
+                        <span class="material-symbols-outlined text-base mr-1">visibility</span>
+                        View PDF
+                    </button>
+                    <button class="text-[#9cb2ba] text-sm hover:text-white flex items-center">
+                        <span class="material-symbols-outlined text-base mr-1">assessment</span>
+                        View Submissions
+                    </button>
+                </div>
+            `;
+            container.appendChild(lessonCard);
         });
     }
     
@@ -444,6 +572,7 @@
         loadClassStudents();
         loadClassProjects();
         loadClassAssignments();
+        loadPDLLessons(); // Load PDF lessons
     });
 </script>
 </body>

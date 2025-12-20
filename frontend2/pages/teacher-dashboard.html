@@ -69,6 +69,12 @@
 </a>
 </div>
 <div class="flex items-center gap-3 px-3 py-2 text-slate-300 hover:bg-primary/10 hover:text-primary rounded-lg transition-colors">
+<a href="pdf-upload-assignment.html" class="flex items-center gap-3 w-full h-full">
+<span class="material-symbols-outlined">upload_file</span>
+<p class="text-sm font-medium leading-normal">Upload PDF</p>
+</a>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 text-slate-300 hover:bg-primary/10 hover:text-primary rounded-lg transition-colors">
 <a href="ai-content-generator.html" class="flex items-center gap-3 w-full h-full">
 <span class="material-symbols-outlined">assignment</span>
 <p class="text-sm font-medium leading-normal">Assignments</p>
@@ -126,6 +132,9 @@
 <div class="flex items-center justify-end gap-4">
 <a href="ai-content-generator.html" class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-background-dark text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors">
 <span class="truncate">AI Content Generator</span>
+</a>
+<a href="ai-content-demo.html" class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary/20 text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/30 transition-colors ml-2">
+<span class="truncate">AI Demo</span>
 </a>
 <button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 bg-[#111618] text-slate-300 gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-2.5 hover:text-primary transition-colors">
 <span class="material-symbols-outlined">notifications</span>
@@ -310,10 +319,8 @@
         // Show appropriate message
         container.innerHTML = '<div class="text-center py-4 text-slate-400">Upcoming deadlines will be implemented soon.</div>';
     }
-</script>
-
-<script>
-    // Update teacher name display
+    
+    // Update teacher name display and fetch dashboard data
     document.addEventListener('DOMContentLoaded', function() {
         updateTeacherNameDisplay();
         fetchTeacherDashboard();
@@ -344,4 +351,3 @@
         }
     }
 </script>
-</body></html>

@@ -1,8 +1,9 @@
 import numpy as np
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Dict, Any
 import schemas
 import models
+from datetime import datetime, timedelta
 
 class BayesianKnowledgeTracer:
     def __init__(self, init_prior=0.5, learn_rate=0.3, guess_rate=0.1, slip_rate=0.1):
@@ -215,3 +216,236 @@ def recommend_learning_path(student_id: int, db: Session) -> List[dict]:
     recommendations.sort(key=lambda x: (priority_order[x["priority"]], x["estimated_time"]))
     
     return recommendations
+
+def get_student_learning_profile(student_id: int, db: Session) -> Dict[str, Any]:
+    """
+    Build a comprehensive learning profile for a student based on their interactions and performance.
+    """
+    # Get student's mastery records
+    mastery_records = db.query(models.StudentMastery).filter(
+        models.StudentMastery.student_id == student_id
+    ).all()
+    
+    # Get student's engagement logs from the last 30 days
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    engagement_logs = db.query(models.EngagementLogs).filter(
+        models.EngagementLogs.student_id == student_id,
+        models.EngagementLogs.timestamp >= thirty_days_ago
+    ).all()
+    
+    # Get student's assignment submissions
+    assignment_submissions = db.query(models.StudentAssignments).filter(
+        models.StudentAssignments.student_id == student_id
+    ).all()
+    
+    # Calculate learning metrics
+    total_assignments = len(assignment_submissions)
+    completed_assignments = len([s for s in assignment_submissions if s.status == schemas.AssignmentStatus.SUBMITTED])
+    graded_assignments = [s for s in assignment_submissions if s.score is not None]
+    
+    avg_score = np.mean([s.score for s in graded_assignments]) if graded_assignments else 0
+    completion_rate = (completed_assignments / total_assignments * 100) if total_assignments > 0 else 0
+    
+    # Calculate engagement metrics
+    total_engagement_time = sum([log.value for log in engagement_logs])
+    avg_daily_engagement = total_engagement_time / 30 if total_engagement_time > 0 else 0
+    
+    # Identify strengths and weaknesses
+    strengths = []
+    weaknesses = []
+    
+    for record in mastery_records:
+        concept = db.query(models.Concepts).filter(models.Concepts.id == record.concept_id).first()
+        if concept:
+            if record.mastery_score >= 80:
+                strengths.append({
+                    "concept": concept.name,
+                    "mastery_score": record.mastery_score
+                })
+            elif record.mastery_score < 60:
+                weaknesses.append({
+                    "concept": concept.name,
+                    "mastery_score": record.mastery_score
+                })
+    
+    # Determine learning pace
+    if avg_daily_engagement > 120:  # More than 2 hours per day
+        learning_pace = "fast"
+    elif avg_daily_engagement > 60:  # 1-2 hours per day
+        learning_pace = "moderate"
+    else:
+        learning_pace = "slow"
+    
+    # Determine preferred difficulty level based on performance
+    if avg_score >= 85:
+        preferred_difficulty = "advanced"
+    elif avg_score >= 70:
+        preferred_difficulty = "intermediate"
+    else:
+        preferred_difficulty = "beginner"
+    
+    return {
+        "student_id": student_id,
+        "learning_pace": learning_pace,
+        "preferred_difficulty": preferred_difficulty,
+        "avg_score": round(avg_score, 2),
+        "completion_rate": round(completion_rate, 2),
+        "total_engagement_minutes": round(total_engagement_time, 2),
+        "avg_daily_engagement_minutes": round(avg_daily_engagement, 2),
+        "strengths": strengths,
+        "weaknesses": weaknesses,
+        "total_assignments": total_assignments,
+        "completed_assignments": completed_assignments
+    }
+
+def adjust_content_difficulty(student_id: int, db: Session) -> Dict[str, Any]:
+    """
+    Adjust content difficulty based on student's learning profile and recent performance.
+    """
+    # Get student's learning profile
+    profile = get_student_learning_profile(student_id, db)
+    
+    # Get recent assignment scores (last 5 assignments)
+    recent_assignments = db.query(models.StudentAssignments).filter(
+        models.StudentAssignments.student_id == student_id,
+        models.StudentAssignments.score.isnot(None)
+    ).order_by(models.StudentAssignments.submitted_at.desc()).limit(5).all()
+    
+    # Calculate recent performance trend
+    if len(recent_assignments) >= 2:
+        recent_scores = [a.score for a in recent_assignments]
+        trend = np.polyfit(range(len(recent_scores)), recent_scores, 1)[0]  # Slope of trend line
+        
+        if trend > 5:  # Improving significantly
+            difficulty_adjustment = "increase"
+        elif trend < -5:  # Declining significantly
+            difficulty_adjustment = "decrease"
+        else:
+            difficulty_adjustment = "maintain"
+    else:
+        difficulty_adjustment = "maintain"
+    
+    # Adjust based on overall performance
+    if profile["avg_score"] >= 90 and difficulty_adjustment == "maintain":
+        difficulty_adjustment = "increase"
+    elif profile["avg_score"] <= 60 and difficulty_adjustment == "maintain":
+        difficulty_adjustment = "decrease"
+    
+    return {
+        "student_id": student_id,
+        "current_difficulty": profile["preferred_difficulty"],
+        "recommended_adjustment": difficulty_adjustment,
+        "reasoning": f"Based on average score of {profile['avg_score']}% and recent performance trend"
+    }
+
+def analyze_learning_speed(student_id: int, db: Session) -> Dict[str, Any]:
+    """
+    Analyze student's learning speed based on engagement patterns and mastery progression.
+    """
+    # Get engagement logs from the last 30 days
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    engagement_logs = db.query(models.EngagementLogs).filter(
+        models.EngagementLogs.student_id == student_id,
+        models.EngagementLogs.timestamp >= thirty_days_ago
+    ).all()
+    
+    # Get mastery records with timestamps
+    mastery_records = db.query(models.StudentMastery).filter(
+        models.StudentMastery.student_id == student_id
+    ).all()
+    
+    # Calculate learning speed metrics
+    total_engagement_time = sum([log.value for log in engagement_logs])
+    avg_daily_engagement = total_engagement_time / 30 if total_engagement_time > 0 else 0
+    
+    # Calculate mastery progression rate
+    if len(mastery_records) >= 2:
+        # Sort by concept_id to get a progression (simplified)
+        sorted_records = sorted(mastery_records, key=lambda x: x.concept_id)
+        mastery_scores = [record.mastery_score for record in sorted_records]
+        
+        if len(mastery_scores) >= 2:
+            # Calculate average improvement per concept
+            improvements = [mastery_scores[i] - mastery_scores[i-1] for i in range(1, len(mastery_scores))]
+            avg_improvement = np.mean(improvements) if improvements else 0
+            
+            # Determine learning speed category
+            if avg_improvement > 10:  # Rapid improvement
+                learning_speed = "rapid"
+            elif avg_improvement > 5:  # Fast improvement
+                learning_speed = "fast"
+            elif avg_improvement > 0:  # Moderate improvement
+                learning_speed = "moderate"
+            else:  # Slow or no improvement
+                learning_speed = "slow"
+        else:
+            learning_speed = "undetermined"
+    else:
+        learning_speed = "undetermined"
+    
+    # Determine content pacing recommendation
+    if learning_speed == "rapid":
+        pacing_recommendation = "accelerate"
+    elif learning_speed == "slow":
+        pacing_recommendation = "decelerate"
+    else:
+        pacing_recommendation = "maintain"
+    
+    return {
+        "student_id": student_id,
+        "learning_speed": learning_speed,
+        "avg_daily_engagement_minutes": round(avg_daily_engagement, 2),
+        "mastery_progression_rate": round(avg_improvement, 2) if 'avg_improvement' in locals() else 0,
+        "pacing_recommendation": pacing_recommendation,
+        "analysis_timestamp": datetime.utcnow().isoformat()
+    }
+
+def adjust_content_pacing(student_id: int, db: Session) -> Dict[str, Any]:
+    """
+    Dynamically adjust content pacing based on student's learning speed analysis.
+    """
+    # Analyze learning speed
+    speed_analysis = analyze_learning_speed(student_id, db)
+    
+    # Get student's learning profile
+    profile = get_student_learning_profile(student_id, db)
+    
+    # Determine pacing adjustment
+    if speed_analysis["pacing_recommendation"] == "accelerate":
+        pacing_factor = 1.5  # Increase pace by 50%
+        content_density = "high"
+    elif speed_analysis["pacing_recommendation"] == "decelerate":
+        pacing_factor = 0.7  # Decrease pace by 30%
+        content_density = "low"
+    else:
+        pacing_factor = 1.0  # Maintain current pace
+        content_density = "medium"
+    
+    # Adjust estimated time for assignments based on pacing factor
+    # Get current assignments for the student
+    student_assignments = db.query(models.StudentAssignments).filter(
+        models.StudentAssignments.student_id == student_id
+    ).all()
+    
+    adjusted_assignments = []
+    for sa in student_assignments:
+        assignment = db.query(models.Assignments).filter(models.Assignments.id == sa.assignment_id).first()
+        if assignment:
+            adjusted_time = int(30 * pacing_factor)  # Base time adjusted by pacing factor
+            adjusted_assignments.append({
+                "assignment_id": assignment.id,
+                "title": assignment.title,
+                "original_estimated_time": 30,
+                "adjusted_estimated_time": adjusted_time,
+                "pacing_factor": pacing_factor
+            })
+    
+    return {
+        "student_id": student_id,
+        "learning_speed": speed_analysis["learning_speed"],
+        "pacing_recommendation": speed_analysis["pacing_recommendation"],
+        "content_density": content_density,
+        "pacing_factor": pacing_factor,
+        "adjusted_assignments": adjusted_assignments,
+        "reasoning": f"Based on {speed_analysis['learning_speed']} learning speed and {profile['learning_pace']} engagement pace"
+    }

@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Content Generation Demo</title>
+    <link rel="stylesheet" href="../css/custom.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --success: #4cc9f0;
+            --info: #4895ef;
+            --warning: #f72585;
+            --danger: #e63946;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --gray: #6c757d;
+            --light-gray: #e9ecef;
+            
+            /* Dark mode variables */
+            --bg-dark: #121826;
+            --card-bg-dark: #1e293b;
+            --text-dark: #f1f5f9;
+            --text-secondary-dark: #94a3b8;
+            --border-dark: #334155;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        /* Dark mode styles */
+        body.dark-mode {
+            background-color: var(--bg-dark);
+            color: var(--text-dark);
+        }
+
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .dark-mode .container {
+            background-color: var(--card-bg-dark);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        
+        .dark-mode h1 {
+            color: var(--text-dark);
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #eee;
+            border-radius: 5px;
+        }
+        
+        .dark-mode .section {
+            border: 1px solid var(--border-dark);
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            background-color: white;
+            color: #333;
+        }
+        
+        .dark-mode textarea {
+            background-color: #2d3748;
+            color: var(--text-dark);
+            border: 1px solid var(--border-dark);
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            background-color: white;
+            color: #333;
+        }
+        
+        .dark-mode input[type="text"] {
+            background-color: #2d3748;
+            color: var(--text-dark);
+            border: 1px solid var(--border-dark);
+        }
+
+        input[type="date"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            background-color: white;
+            color: #333;
+        }
+        
+        .dark-mode input[type="date"] {
+            background-color: #2d3748;
+            color: var(--text-dark);
+            border: 1px solid var(--border-dark);
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        
+        .dark-mode button {
+            background-color: var(--primary);
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        .dark-mode button:hover {
+            background-color: var(--secondary);
+        }
+
+        .result {
+            background-color: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin-top: 15px;
+            white-space: pre-wrap;
+        }
+        
+        .dark-mode .result {
+            background-color: rgba(30, 41, 59, 0.8);
+            color: var(--text-dark);
+            border-left: 4px solid var(--primary);
+        }
+
+        .error {
+            background-color: #ffeaea;
+            border-left: 4px solid #e74c3c;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .dark-mode .error {
+            background-color: rgba(113, 35, 12, 0.2);
+            color: #fcd34d;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .loading {
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        
+        .dark-mode .loading {
+            color: var(--text-secondary-dark);
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .btn-toggle-theme {
+            background: #e9ecef;
+            color: #333;
+            border: 1px solid #ced4da;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .dark-mode .btn-toggle-theme {
+            background: var(--card-bg-dark);
+            color: var(--text-dark);
+            border: 1px solid var(--border-dark);
+        }
+        
+        .file-upload {
+            margin-bottom: 15px;
+        }
+        
+        .file-upload label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .file-upload input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: white;
+            color: #333;
+        }
+        
+        .dark-mode .file-upload input[type="file"] {
+            background-color: #2d3748;
+            color: var(--text-dark);
+            border: 1px solid var(--border-dark);
+        }
+        
+        .upload-btn {
+            background-color: #28a745;
+        }
+        
+        .dark-mode .upload-btn {
+            background-color: #28a745;
+        }
+        
+        .upload-btn:hover {
+            background-color: #218838;
+        }
+        
+        .dark-mode .upload-btn:hover {
+            background-color: #1e7e34;
+        }
+        
+        .pdf-preview {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px dashed #ddd;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .dark-mode .pdf-preview {
+            background-color: rgba(30, 41, 59, 0.8);
+            border: 1px dashed var(--border-dark);
+        }
+        
+        .tab-container {
+            margin-bottom: 20px;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 15px;
+        }
+        
+        .dark-mode .tabs {
+            border-bottom: 1px solid var(--border-dark);
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            background-color: #e9ecef;
+            margin-right: 5px;
+        }
+        
+        .dark-mode .tab {
+            background-color: #2d3748;
+            border: 1px solid var(--border-dark);
+            border-bottom: none;
+        }
+        
+        .tab.active {
+            background-color: white;
+            border-color: #ddd;
+            border-bottom: 1px solid white;
+            font-weight: bold;
+        }
+        
+        .dark-mode .tab.active {
+            background-color: var(--card-bg-dark);
+            border-color: var(--border-dark);
+            border-bottom: 1px solid var(--card-bg-dark);
+            color: var(--text-dark);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: white;
+            color: #333;
+        }
+        
+        .dark-mode .form-control {
+            background-color: #2d3748;
+            color: var(--text-dark);
+            border: 1px solid var(--border-dark);
+        }
+        
+        select[multiple] {
+            height: auto;
+            min-height: 100px;
+        }
+        
+        .help-text {
+            font-size: 0.9rem;
+            color: var(--gray);
+            margin-top: 5px;
+        }
+        
+        .dark-mode .help-text {
+            color: var(--text-secondary-dark);
+        }
+        
+        .class-loading {
+            color: var(--gray);
+            font-style: italic;
+        }
+        
+        .dark-mode .class-loading {
+            color: var(--text-secondary-dark);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>AI Content Generation Demo</h1>
+        <button class="btn-toggle-theme" id="themeToggle">
+            <i class="fas fa-moon"></i> Dark Mode
+        </button>
+    </div>
+    
+    <div class="container">
+        <!-- PDF Concept Extraction -->
+        <div class="section">
+            <h2>PDF Concept Extraction</h2>
+            
+            <div class="tab-container">
+                <div class="tabs">
+                    <div class="tab active" onclick="switchTab('upload', 'pdf')">Upload PDF</div>
+                    <div class="tab" onclick="switchTab('paste', 'pdf')">Paste Text</div>
+                </div>
+                
+                <div id="upload-tab-pdf" class="tab-content active">
+                    <div class="file-upload">
+                        <label for="pdf-file">Select PDF File:</label>
+                        <input type="file" id="pdf-file" accept=".pdf" />
+                    </div>
+                    <button class="upload-btn" onclick="uploadAndExtract()">Upload & Extract</button>
+                    <div id="pdf-preview" class="pdf-preview" style="display: none;"></div>
+                </div>
+                
+                <div id="paste-tab-pdf" class="tab-content">
+                    <textarea id="pdf-text" placeholder="Paste PDF text here...">Machine Learning is a subset of artificial intelligence that enables computers to learn and make decisions from data without being explicitly programmed. It uses statistical techniques to give computers the ability to "learn" from data and improve their performance on a specific task over time.
+
+Key aspects include:
+- Supervised learning
+- Unsupervised learning
+- Reinforcement learning
+
+Applications range from recommendation systems to autonomous vehicles.</textarea>
+                    <button onclick="extractConcept()">Extract Concept</button>
+                </div>
+            </div>
+            
+            <div id="extract-result" class="result"></div>
+        </div>
+        
+        <!-- Class Assignment Section -->
+        <div class="section">
+            <h2>Assign as Lessons</h2>
+            <div class="form-group">
+                <label for="class-selector">Select Classes:</label>
+                <select id="class-selector" multiple size="4" class="form-control">
+                    <option value="" class="class-loading">Loading classes...</option>
+                </select>
+                <p class="help-text">Hold Ctrl (Cmd on Mac) to select multiple classes</p>
+            </div>
+            <div class="form-group">
+                <label for="due-date">Target Date (optional):</label>
+                <input type="date" id="due-date" class="form-control">
+            </div>
+            <button class="upload-btn" onclick="assignAsLessons()">Assign as Lessons</button>
+            <div id="assignment-result" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        // Base URL for API calls
+        const BASE_URL = 'http://localhost:8001';
+        
+        // Theme toggle functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('themeToggle');
+            themeToggle.addEventListener('click', function() {
+                document.body.classList.toggle('dark-mode');
+                
+                // Update button text and icon
+                const icon = this.querySelector('i');
+                if (document.body.classList.contains('dark-mode')) {
+                    icon.className = 'fas fa-sun';
+                    this.innerHTML = '<i class="fas fa-sun"></i> Light Mode';
+                } else {
+                    icon.className = 'fas fa-moon';
+                    this.innerHTML = '<i class="fas fa-moon"></i> Dark Mode';
+                }
+            });
+            
+            // Load classes when page loads
+            loadClasses();
+        });
+        
+        // Tab switching functionality
+        function switchTab(tabType, section) {
+            // Hide all tab contents for this section
+            document.querySelectorAll(`#${section}-tab-pdf, #${section}-tab-paste`).forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs for this section
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(`${tabType}-tab-${section}`).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+        
+        // Helper function to display results
+        function displayResult(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            if (isError) {
+                element.innerHTML = `<div class="error">${JSON.stringify(data, null, 2)}</div>`;
+            } else {
+                element.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            }
+        }
+        
+        // Helper function to show loading state
+        function showLoading(elementId) {
+            document.getElementById(elementId).innerHTML = '<div class="loading">Processing...</div>';
+        }
+        
+        // PDF file handling
+        document.getElementById('pdf-file').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file && file.type === 'application/pdf') {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // Display a preview of the file info
+                    const preview = document.getElementById('pdf-preview');
+                    preview.style.display = 'block';
+                    preview.innerHTML = `
+                        <p><strong>Selected file:</strong> ${file.name}</p>
+                        <p><strong>Size:</strong> ${(file.size / 1024).toFixed(2)} KB</p>
+                        <p><strong>Type:</strong> ${file.type}</p>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            } else if (file) {
+                alert('Please select a valid PDF file.');
+                event.target.value = '';
+            }
+        });
+        
+        // Upload and extract PDF
+        async function uploadAndExtract() {
+            const fileInput = document.getElementById('pdf-file');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a PDF file first.');
+                return;
+            }
+            
+            if (file.type !== 'application/pdf') {
+                alert('Please select a valid PDF file.');
+                return;
+            }
+            
+            showLoading('extract-result');
+            
+            try {
+                // In a real implementation, we would send the file to the backend
+                // For now, we'll simulate extracting text from the PDF
+                // and then call the extract concept endpoint
+                
+                // Simulate PDF text extraction
+                const pdfText = `This is simulated text extracted from the PDF file: ${file.name}
+                
+In a real implementation, this text would be extracted from the actual PDF content using a PDF parsing library on the backend.
+
+The file size is ${(file.size / 1024).toFixed(2)} KB and was processed successfully.`;
+                
+                // Call the extract concept endpoint with the extracted text
+                const response = await fetch(`${BASE_URL}/ai/extract-concept`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ pdf_text: pdfText })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                displayResult('extract-result', result);
+            } catch (error) {
+                displayResult('extract-result', { error: error.message }, true);
+            }
+        }
+        
+        // Assign as lessons function
+        async function assignAsLessons() {
+            const selectedClasses = Array.from(document.getElementById('class-selector').selectedOptions)
+                                          .map(option => option.value);
+            
+            if (selectedClasses.length === 0) {
+                alert('Please select at least one class.');
+                return;
+            }
+            
+            showLoading('assignment-result');
+            
+            try {
+                // In a real implementation, this would send the lesson to the backend
+                // For now, we'll simulate the lesson assignment process
+                
+                // Simulate API delay
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                // Simulate successful lesson assignment
+                const result = {
+                    message: "Lessons successfully created and assigned to classes",
+                    assigned_classes: selectedClasses.map(id => {
+                        const option = document.querySelector(`#class-selector option[value="${id}"]`);
+                        return option ? option.textContent : `Class ${id}`;
+                    }),
+                    lesson_id: Math.floor(Math.random() * 1000) + 1,
+                    target_date: document.getElementById('due-date').value || "No target date set"
+                };
+                
+                displayResult('assignment-result', result);
+            } catch (error) {
+                displayResult('assignment-result', { error: error.message }, true);
+            }
+        }
+        
+        // PDF Concept Extraction (from pasted text)
+        async function extractConcept() {
+            showLoading('extract-result');
+            try {
+                const pdfText = document.getElementById('pdf-text').value;
+                const response = await fetch(`${BASE_URL}/ai/extract-concept`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ pdf_text: pdfText })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                displayResult('extract-result', result);
+            } catch (error) {
+                displayResult('extract-result', { error: error.message }, true);
+            }
+        }
+        
+        // Load classes from API
+        async function loadClasses() {
+            try {
+                const response = await fetch(`${BASE_URL}/classes/`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const classes = await response.json();
+                
+                const classSelector = document.getElementById('class-selector');
+                
+                if (!classes || classes.length === 0) {
+                    classSelector.innerHTML = '<option value="">No classes found</option>';
+                    return;
+                }
+                
+                // Clear the loading option
+                classSelector.innerHTML = '';
+                
+                // Add classes to the selector
+                classes.forEach(cls => {
+                    const option = document.createElement('option');
+                    option.value = cls.id;
+                    option.textContent = cls.name;
+                    classSelector.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading classes:', error);
+                document.getElementById('class-selector').innerHTML = '<option value="">Failed to load classes</option>';
+            }
+        }
+    </script>
+</body>
+</html>

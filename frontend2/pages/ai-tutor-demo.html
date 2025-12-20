@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Tutor Demo - EduAI Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            padding: 30px 0;
+            color: #333;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            color: #666;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+        }
+
+        .panel-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .panel-body {
+            padding: 20px;
+        }
+
+        .concept-content {
+            line-height: 1.6;
+            color: #444;
+        }
+
+        .concept-content h3 {
+            color: #333;
+            margin: 20px 0 10px 0;
+        }
+
+        .concept-content ul {
+            padding-left: 20px;
+            margin: 10px 0;
+        }
+
+        .concept-content li {
+            margin-bottom: 8px;
+        }
+
+        #ai-tutor-container {
+            height: 500px;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .feature-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .feature-card i {
+            font-size: 2.5rem;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .feature-card h3 {
+            margin: 15px 0;
+            color: #333;
+        }
+
+        .feature-card p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 30px 0;
+            color: #666;
+            margin-top: 30px;
+            border-top: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-robot"></i> AI Tutor Demo</h1>
+            <p>Interactive learning assistant powered by artificial intelligence</p>
+        </div>
+
+        <div class="content">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2><i class="fas fa-book"></i> Learning Context</h2>
+                </div>
+                <div class="panel-body">
+                    <div class="concept-content">
+                        <h3>Machine Learning Fundamentals</h3>
+                        <p>Machine Learning is a subset of artificial intelligence that enables computers to learn and make decisions from data without being explicitly programmed. It uses statistical techniques to give computers the ability to "learn" from data and improve their performance on a specific task over time.</p>
+                        
+                        <h3>Key Aspects:</h3>
+                        <ul>
+                            <li><strong>Supervised learning</strong> - Uses labeled training data</li>
+                            <li><strong>Unsupervised learning</strong> - Finds patterns in unlabeled data</li>
+                            <li><strong>Reinforcement learning</strong> - Learns through interaction with an environment</li>
+                        </ul>
+                        
+                        <h3>Applications:</h3>
+                        <p>Machine learning has numerous applications ranging from recommendation systems in e-commerce and streaming services to autonomous vehicles and medical diagnosis.</p>
+                        
+                        <h3>Getting Started:</h3>
+                        <p>To begin with machine learning, it's important to understand basic mathematical concepts like linear algebra, calculus, and statistics. Python is the most commonly used programming language in the field, with libraries like scikit-learn, TensorFlow, and PyTorch providing powerful tools for implementation.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h2><i class="fas fa-comments"></i> AI Tutor Chat</h2>
+                </div>
+                <div class="panel-body">
+                    <div id="ai-tutor-container">
+                        <!-- AI Tutor component will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="features">
+            <div class="feature-card">
+                <i class="fas fa-brain"></i>
+                <h3>Intelligent Responses</h3>
+                <p>Our AI tutor understands context and provides accurate, educational responses based on your course materials.</p>
+            </div>
+            
+            <div class="feature-card">
+                <i class="fas fa-sync-alt"></i>
+                <h3>Continuous Learning</h3>
+                <p>The system adapts to your learning pace and style, providing personalized assistance throughout your journey.</p>
+            </div>
+            
+            <div class="feature-card">
+                <i class="fas fa-question-circle"></i>
+                <h3>24/7 Availability</h3>
+                <p>Get help anytime you need it, whether you're studying late at night or reviewing concepts.</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>EduAI Platform - Transforming Education Through Artificial Intelligence</p>
+        </div>
+    </div>
+
+    <!-- Include the AI Tutor component -->
+    <script src="../js/components/ai-tutor.js"></script>
+    
+    <script>
+        // Set context for the AI tutor
+        document.addEventListener('DOMContentLoaded', function() {
+            // In a real implementation, this would be dynamically set based on the current lesson
+            const context = "Machine Learning Fundamentals";
+            if (window.aiTutor) {
+                aiTutor.setContext(context);
+            }
+        });
+    </script>
+</body>
+</html>

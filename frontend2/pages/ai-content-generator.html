@@ -316,8 +316,21 @@
                 const result = await teacherAPI.createAssignments(assignments);
                 
                 // Store the created assignment ID for assignment to class
-                if (result.assignments && result.assignments.length > 0) {
-                    createdItemId = result.assignments[0].id;
+                // Handle both possible response formats
+                let createdAssignment = null;
+                if (result && result.assignments && result.assignments.length > 0) {
+                    // Format: {message: "...", assignments: [...]}
+                    createdAssignment = result.assignments[0];
+                } else if (result && Array.isArray(result) && result.length > 0) {
+                    // Format: [...]
+                    createdAssignment = result[0];
+                } else if (result && result.id) {
+                    // Format: single assignment object
+                    createdAssignment = result;
+                }
+                
+                if (createdAssignment) {
+                    createdItemId = createdAssignment.id;
                     
                     // Assign to class
                     await teacherAPI.assignAssignmentToClass(classId, { assignment_id: createdItemId });

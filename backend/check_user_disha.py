@@ -5,12 +5,12 @@ conn = sqlite3.connect('amep.db')
 cursor = conn.cursor()
 
 # Query for the specific user
-cursor.execute("SELECT name, email, role FROM users WHERE email = 'dishakulkarni2005@gmail.com'")
+cursor.execute("SELECT id, name, email, password_hash, role FROM users WHERE email = 'dishakulkarni2005@gmail.com'")
 result = cursor.fetchall()
 
 print("User information:")
 for row in result:
-    print(f"Name: {row[0]}, Email: {row[1]}, Role: {row[2]}")
+    print(f"ID: {row[0]}, Name: {row[1]}, Email: {row[2]}, Password Hash: {row[3]}, Role: {row[4]}")
 
 # Close the connection
 conn.close()

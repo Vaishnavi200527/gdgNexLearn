@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Continuous Assessment Demo - EduAI Platform</title>
+    <link rel="stylesheet" href="../css/components/continuous-assessment.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-top: 10px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .concept-info {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .concept-info h2 {
+            color: #333;
+            margin-top: 0;
+        }
+        
+        .concept-description {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #555;
+        }
+        
+        #continuous-assessment-container {
+            margin-bottom: 30px;
+        }
+        
+        .explanation-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .explanation-section h3 {
+            color: #333;
+            margin-top: 0;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-brain"></i> Continuous Assessment Demo</h1>
+            <p>Real-time understanding checks with adaptive content delivery</p>
+        </div>
+        
+        <div class="concept-info">
+            <h2>Concept: Machine Learning Fundamentals</h2>
+            <div class="concept-description">
+                <p>Machine Learning is a subset of artificial intelligence that enables computers to learn and make decisions from data without being explicitly programmed. It uses statistical techniques to give computers the ability to "learn" from data and improve their performance on a specific task over time.</p>
+                
+                <p><strong>Key Aspects:</strong></p>
+                <ul>
+                    <li>Supervised learning - Uses labeled training data</li>
+                    <li>Unsupervised learning - Finds patterns in unlabeled data</li>
+                    <li>Reinforcement learning - Learns through interaction with an environment</li>
+                </ul>
+                
+                <p>Applications range from recommendation systems to autonomous vehicles.</p>
+            </div>
+        </div>
+        
+        <div id="continuous-assessment-container">
+            <!-- Continuous assessment component will be loaded here -->
+        </div>
+        
+        <div class="explanation-section">
+            <h3><i class="fas fa-info-circle"></i> How It Works</h3>
+            <p>This continuous assessment system provides real-time understanding checks after each concept is presented. Based on your responses, the system will:</p>
+            <ul>
+                <li>Immediately evaluate your understanding</li>
+                <li>Provide personalized feedback</li>
+                <li>Adapt the next content delivery (simpler explanation, review, or advance)</li>
+                <li>Update your learning profile for long-term personalization</li>
+            </ul>
+            <p>The system uses AI to generate relevant questions and adapts the difficulty based on your performance history.</p>
+        </div>
+        
+        <div class="footer">
+            <p>EduAI Platform - AI-Powered Adaptive Learning</p>
+        </div>
+    </div>
+
+    <!-- Include the student API and continuous assessment component -->
+    <script src="http://localhost:8000/student-api.js"></script>
+    <script src="../js/components/continuous-assessment.js"></script>
+    
+    <script>
+        // Initialize the continuous assessment when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // For demo purposes, we'll use a mock concept ID
+            const conceptId = 1; // In a real app, this would come from the current lesson context
+            continuousAssessment.init(conceptId);
+        });
+    </script>
+</body>
+</html>

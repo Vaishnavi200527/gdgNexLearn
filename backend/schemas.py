@@ -541,3 +541,96 @@ class QuizStatisticsResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# Enhanced schemas for adaptive learning features
+class StudentLearningProfile(BaseModel):
+    student_id: int
+    learning_pace: str
+    preferred_difficulty: str
+    avg_score: float
+    completion_rate: float
+    total_engagement_minutes: float
+    avg_daily_engagement_minutes: float
+    strengths: List[Dict[str, Any]]
+    weaknesses: List[Dict[str, Any]]
+    total_assignments: int
+    completed_assignments: int
+    
+    class Config:
+        from_attributes = True
+
+class ContentDifficultyAdjustment(BaseModel):
+    student_id: int
+    current_difficulty: str
+    recommended_adjustment: str
+    reasoning: str
+    
+    class Config:
+        from_attributes = True
+
+class UnderstandingCheckQuestion(BaseModel):
+    question_id: str
+    question_text: str
+    options: Optional[List[str]]
+    correct_answer: str
+    question_type: str
+    
+    class Config:
+        from_attributes = True
+
+class UnderstandingCheckResponse(BaseModel):
+    is_correct: bool
+    confidence: str
+    feedback: str
+    
+    class Config:
+        from_attributes = True
+
+class ContentAdaptationRecommendation(BaseModel):
+    student_id: int
+    concept_id: int
+    accuracy: float
+    next_step: str
+    recommended_explanation_type: str
+    feedback: str
+    
+    class Config:
+        from_attributes = True
+
+class ClassDashboardResponse(BaseModel):
+    class_mastery_summary: Dict[str, Dict[str, Any]]
+    engagement_metrics: Dict[str, Any]
+    soft_skill_summary: Dict[str, float]
+    leaderboard: List[Dict[str, Any]]
+    struggling_students: List[Dict[str, Any]]
+    
+    class Config:
+        from_attributes = True
+
+class StudentInsightsResponse(BaseModel):
+    student_id: int
+    student_name: str
+    email: str
+    total_assignments: int
+    completed_assignments: int
+    completion_rate: float
+    avg_score: float
+    total_engagement_minutes: float
+    avg_daily_engagement_minutes: float
+    strengths: List[Dict[str, Any]]
+    weaknesses: List[Dict[str, Any]]
+    recent_engagement_trend: str
+    
+    class Config:
+        from_attributes = True
+
+class ConceptAnalyticsResponse(BaseModel):
+    concept_name: str
+    avg_mastery: float
+    min_mastery: float
+    max_mastery: float
+    student_count: int
+    mastery_distribution: Dict[str, int]
+    
+    class Config:
+        from_attributes = True

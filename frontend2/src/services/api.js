@@ -39,93 +39,99 @@ function setCachedData(cacheKey, data) {
 
 // Helper function for API requests with caching
 async function apiRequest(endpoint, options = {}, cacheKey = null, forceRefresh = false) {
-  const url = `${API_BASE_URL}${endpoint}`;
+    const url = `${API_BASE_URL}${endpoint}`;
 
-  // Check cache first if cacheKey provided and not forcing refresh
-  if (cacheKey && !forceRefresh) {
-    const cached = getCachedData(cacheKey);
-    if (cached) {
-      return cached;
-    }
-  }
-
-  // Check if there's already a pending request for this endpoint
-  if (pendingRequests.has(url)) {
-    return pendingRequests.get(url);
-  }
-
-  // Set default headers
-  const defaultHeaders = {
-    'Content-Type': 'application/json',
-  };
-
-  // Merge headers
-  const headers = {
-    ...defaultHeaders,
-    ...options.headers,
-  };
-
-  // Add authorization token if available
-  const token = localStorage.getItem('authToken');
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  // Create fetch options
-  const fetchOptions = {
-    ...options,
-    headers,
-  };
-
-  try {
-    const request = fetch(url, fetchOptions);
-    pendingRequests.set(url, request);
-
-    const response = await request;
-
-    // Handle unauthorized access
-    if (response.status === 401) {
-      // Clear auth token and redirect to login
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('userRole');
-      window.location.href = '/frontend2/pages/login.html';
-      return;
+    // Check cache first if cacheKey provided and not forcing refresh
+    if (cacheKey && !forceRefresh) {
+        const cached = getCachedData(cacheKey);
+        if (cached) {
+            return cached;
+        }
     }
 
-    // Handle successful responses
-    if (response.ok) {
-      const contentType = response.headers.get('content-type');
-      let data;
-      if (contentType && contentType.includes('application/json')) {
-        data = await response.json();
-      } else {
-        data = await response.text();
-      }
-
-      // Cache the successful response if cacheKey provided
-      if (cacheKey) {
-        setCachedData(cacheKey, data);
-      }
-
-      return data;
+    // Check if there's already a pending request for this endpoint
+    if (pendingRequests.has(url)) {
+        return pendingRequests.get(url);
     }
 
-    // Handle error responses
-    let errorMessage = `HTTP Error: ${response.status}`;
+    // Set default headers
+    const defaultHeaders = {
+        'Content-Type': 'application/json',
+    };
+
+    // Merge headers
+    const headers = {
+        ...defaultHeaders,
+        ...options.headers,
+    };
+
+    // Add authorization token if available
+    const token = localStorage.getItem('authToken');
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    // Create fetch options
+    const fetchOptions = {
+        ...options,
+        headers,
+    };
+
+    // Special handling for FormData - let the browser set the Content-Type
+    if (options.body instanceof FormData) {
+        // Remove Content-Type header so browser can set it with proper boundary
+        delete fetchOptions.headers['Content-Type'];
+    }
+
     try {
-      const errorData = await response.json();
-      errorMessage = errorData.detail || errorData.message || errorMessage;
-    } catch (parseError) {
-      // If we can't parse the error response, use the status text
-      errorMessage = response.statusText || errorMessage;
+        const request = fetch(url, fetchOptions);
+        pendingRequests.set(url, request);
+
+        const response = await request;
+
+        // Handle unauthorized access
+        if (response.status === 401) {
+            // Clear auth token and redirect to login
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userRole');
+            window.location.href = '/frontend2/pages/login.html';
+            return;
+        }
+
+        // Handle successful responses
+        if (response.ok) {
+            const contentType = response.headers.get('content-type');
+            let data;
+            if (contentType && contentType.includes('application/json')) {
+                data = await response.json();
+            } else {
+                data = await response.text();
+            }
+
+            // Cache the successful response if cacheKey provided
+            if (cacheKey) {
+                setCachedData(cacheKey, data);
+            }
+
+            return data;
+        }
+
+        // Handle error responses
+        let errorMessage = `HTTP Error: ${response.status}`;
+        try {
+            const errorData = await response.json();
+            errorMessage = errorData.detail || errorData.message || errorMessage;
+        } catch (parseError) {
+            // If we can't parse the error response, use the status text
+            errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
+    } catch (error) {
+        console.error(`API request failed: ${error.message}`);
+        throw error;
+    } finally {
+        pendingRequests.delete(url);
     }
-    throw new Error(errorMessage);
-  } catch (error) {
-    console.error(`API request failed: ${error.message}`);
-    throw error;
-  } finally {
-    pendingRequests.delete(url);
-  }
 }
 
 // Auth endpoints
@@ -140,7 +146,7 @@ export const authAPI = {
     }),
   }),
   
-  login: (credentials) => apiRequest('/auth/token', {
+  login: (credentials) => apiRequest('/token', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -201,6 +207,17 @@ export const quizAPI = {
 
 // Teacher endpoints
 export const teacherAPI = {
+  // PDF Upload endpoints
+  processPDF: (formData) => apiRequest('/pdf-upload/process-pdf', {
+    method: 'POST',
+    body: formData,
+  }),
+  
+  createAdaptiveAssignment: (formData) => apiRequest('/pdf-upload/create-adaptive-assignment', {
+    method: 'POST',
+    body: formData,
+  }),
+  
   getAIAssignments: (conceptId, apiKey = null) => {
     const params = new URLSearchParams({ concept_id: conceptId });
     if (apiKey) params.append('api_key', apiKey);

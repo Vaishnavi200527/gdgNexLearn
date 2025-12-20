@@ -13,6 +13,7 @@ Backend API for the Adaptive Mastery & Engagement Platform hackathon prototype.
 - Gamification (XP, streaks, leaderboards, badges)
 - Teacher intervention for struggling students
 - Duolingo-style concept progress
+- Advanced AI content generation (PDF concept extraction, explanation variants, examples, micro-questions, answer evaluation)
 
 ## Tech Stack
 
@@ -71,6 +72,7 @@ Backend API for the Adaptive Mastery & Engagement Platform hackathon prototype.
 ### Teacher Routes
 
 - `GET /teacher/ai/assignments?concept_id=XX` - AI suggests assignments
+- `POST /teacher/ai/generate-quiz?topic=XX&difficulty=X&question_count=X` - AI generates quiz questions
 - `POST /teacher/assignments/create` - Create assignments from AI suggestions
 - `GET /teacher/ai/projects?skill_area=XX` - AI suggests projects
 - `POST /teacher/projects/create` - Create projects from AI suggestions
@@ -78,6 +80,27 @@ Backend API for the Adaptive Mastery & Engagement Platform hackathon prototype.
 - `GET /teacher/dashboard` - Class-wide dashboard
 - `POST /teacher/intervene` - Intervene with struggling students
 - `GET /teacher/interventions` - View all interventions
+
+### AI Content Generation Routes
+
+- `POST /ai/extract-concept` - Extract concept information from PDF text
+- `POST /ai/generate-explanations` - Generate different explanation variants
+- `POST /ai/generate-examples` - Generate examples from PDF context
+- `POST /ai/generate-micro-questions` - Generate micro-questions for concepts
+- `POST /ai/evaluate-answer` - Evaluate student answers
+- `POST /ai/teach-concept` - Teach a concept to a student based on their level
+- `POST /ai/reteach-concept` - Re-teach a concept in simpler terms
+- `POST /ai/ask-ai-tutor` - Answer student questions using AI tutor
+- `POST /ai/reflection-prompt` - Provide feedback on student's explanation
+- `POST /ai/analyze-learning-state` - Analyze student's learning behavior and recommend adaptive strategies
+- `POST /ai/detect-confusing-concepts` - Detect confusing concepts based on class performance data
+- `POST /ai/weekly-teacher-summary` - Generate a weekly summary for the teacher
+- `POST /ai/format-ui-explanation` - Format an explanation for UI display on a learning card
+
+### PDF Upload Routes
+
+- `POST /pdf-upload/process-pdf` - Process uploaded PDF file and extract educational concepts
+- `POST /pdf-upload/create-adaptive-assignment` - Create an adaptive assignment from processed PDF concepts and assign to class
 
 ## Demo Data
 
@@ -99,7 +122,8 @@ amep-backend/
 ├── seed_data.py         # Demo data seeding
 ├── routers/             # API route handlers
 │   ├── student.py       # Student endpoints
-│   └── teacher.py       # Teacher endpoints
+│   ├── teacher.py       # Teacher endpoints
+│   └── ai_content.py    # AI content generation endpoints
 └── services/            # Business logic
     ├── adaptive_learning.py
     ├── ai_content_generation.py

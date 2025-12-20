@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Dict, Any, Optional
 from datetime import datetime
 import schemas
 import models
@@ -67,6 +67,50 @@ def get_mastery(
             "level": int(record.mastery_score / 20) + 1
         })
     return results
+
+@router.get("/learning-profile", response_model=schemas.StudentLearningProfile)
+def get_learning_profile(
+    db: Session = Depends(get_db),
+    current_user: models.Users = Depends(get_current_student)
+):
+    """
+    Get student's comprehensive learning profile.
+    """
+    profile = adaptive_learning.get_student_learning_profile(current_user.id, db)
+    return profile
+
+@router.get("/content-adjustment", response_model=schemas.ContentDifficultyAdjustment)
+def get_content_adjustment(
+    db: Session = Depends(get_db),
+    current_user: models.Users = Depends(get_current_student)
+):
+    """
+    Get recommended content difficulty adjustment based on student's performance.
+    """
+    adjustment = adaptive_learning.adjust_content_difficulty(current_user.id, db)
+    return adjustment
+
+@router.get("/learning-speed-analysis", response_model=dict)
+def get_learning_speed_analysis(
+    db: Session = Depends(get_db),
+    current_user: models.Users = Depends(get_current_student)
+):
+    """
+    Get analysis of student's learning speed.
+    """
+    analysis = adaptive_learning.analyze_learning_speed(current_user.id, db)
+    return analysis
+
+@router.get("/content-pacing-adjustment", response_model=dict)
+def get_content_pacing_adjustment(
+    db: Session = Depends(get_db),
+    current_user: models.Users = Depends(get_current_student)
+):
+    """
+    Get dynamic content pacing adjustment based on learning speed.
+    """
+    adjustment = adaptive_learning.adjust_content_pacing(current_user.id, db)
+    return adjustment
 
 @router.get("/assignments/adaptive", response_model=List[schemas.AdaptiveAssignmentResponse])
 def get_adaptive_assignments(
