@@ -330,7 +330,7 @@
         import { teacherAPI } from '../src/services/api.js';
         
         // Define API base URL
-        const API_BASE_URL = 'http://localhost:8001';  // Change port to 8001
+        const API_BASE_URL = 'http://localhost:8000';
         
         // DOM Elements
         const dropArea = document.getElementById('drop-area');
@@ -743,17 +743,24 @@
                 // In a full implementation, we would create assignments for all concepts
                 if (conceptsArray.length > 0) {
                     const firstConcept = conceptsArray[0];
-                    
+                    console.log('First concept:', firstConcept);
+
+                    // Validate concept data
+                    if (!firstConcept || !firstConcept.id) {
+                        alert('Invalid concept data: missing concept ID');
+                        return;
+                    }
+
                     // Create assignment data
                     const assignmentData = [{
-                        concept_id: 1, // Default to concept ID 1 since we don't have real concept IDs
-                        difficulty_level: firstConcept.difficulty === 'easy' ? 1 : 
-                                         firstConcept.difficulty === 'hard' ? 5 : 3, // Map difficulty to 1-5 scale
+                        concept_id: parseInt(firstConcept.id, 10),
+                        difficulty_level: 3, // Default difficulty
                         title: `[PDF] ${assignmentTitle.value}`,
-                        description: instructions || `Adaptive learning assignment based on PDF content: ${assignmentTitle.value}`
+                        description: instructions || `Adaptive learning assignment based on PDF content: ${assignmentTitle.value}`,
+                        content_url: "http://placeholder.com/pdf-content"
                     }];
                     
-                    console.log('Creating assignment with data:', assignmentData);
+                    console.log('Creating assignment with data:', JSON.stringify(assignmentData, null, 2));
                     
                     // Create assignment through teacher API
                     const createdAssignments = await teacherAPI.createAssignments(assignmentData);

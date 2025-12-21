@@ -7,7 +7,7 @@ from auth_utils import get_current_student
 import models
 import schemas
 
-router = APIRouter(prefix="/continuous-assessment", tags=["Continuous Assessment"])
+router = APIRouter(tags=["Continuous Assessment"])
 
 @router.post("/generate-checks")
 async def generate_understanding_checks(

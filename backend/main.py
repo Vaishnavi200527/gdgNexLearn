@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn  # Add this import
 from routers.student import router as student_router
@@ -12,25 +12,33 @@ from routers.classes import router as classes_router  # Add this import
 
 app = FastAPI(title="AI-Powered Adaptive Learning Platform")
 
+# Origins for CORS
+origins = [
+    "http://localhost",
+    "http://localhost:5173",  # Origin from the error message
+    "http://localhost:8080",  # Common dev server port
+    "http://127.0.0.1:5500",  # VS Code Live Server
+]
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
+    allow_origin_regex=r"https?://localhost:\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Include routers
-app.include_router(auth_router)
-app.include_router(student_router)
-app.include_router(teacher_router)
-app.include_router(continuous_assessment_router)
-app.include_router(teacher_dashboard_router)
-app.include_router(ai_content_router)
-app.include_router(pdf_upload_router)  # Add this line
-app.include_router(classes_router)  # Add this line
-
+app.include_router(auth_router, prefix="/auth")
+app.include_router(student_router, prefix="/student")
+app.include_router(teacher_router, prefix="/teacher")
+app.include_router(continuous_assessment_router, prefix="/continuous-assessment")
+app.include_router(teacher_dashboard_router, prefix="/teacher/dashboard")
+app.include_router(ai_content_router, prefix="/ai")
+app.include_router(pdf_upload_router, prefix="/pdf-upload")
+app.include_router(classes_router, prefix="/classes")
 
 @app.get("/student-api.js")
 async def get_student_api_js():

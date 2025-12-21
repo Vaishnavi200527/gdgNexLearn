@@ -7,7 +7,7 @@ from auth_utils import get_current_teacher
 import models
 import schemas
 
-router = APIRouter(prefix="/teacher/dashboard", tags=["Teacher Dashboard"])
+router = APIRouter(tags=["Teacher Dashboard"])
 
 @router.get("/class-overview")
 async def get_class_dashboard(

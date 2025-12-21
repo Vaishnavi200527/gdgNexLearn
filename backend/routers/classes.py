@@ -7,7 +7,6 @@ import database
 from auth_utils import get_current_teacher, get_current_user
 
 router = APIRouter(
-    prefix="/classes",
     tags=["classes"]
 )
 

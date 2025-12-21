@@ -3,6 +3,8 @@ import database
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 
+from auth_utils import get_password_hash
+
 def seed_database():
     db: Session = database.SessionLocal()
     
@@ -24,16 +26,16 @@ def seed_database():
     
     # Create sample users (students and teachers)
     students = [
-        models.Users(name="Alice Johnson", email="alice@example.com", password_hash="password123", role="student"),
-        models.Users(name="Bob Smith", email="bob@example.com", password_hash="password123", role="student"),
-        models.Users(name="Carol Davis", email="carol@example.com", password_hash="password123", role="student"),
-        models.Users(name="David Wilson", email="david@example.com", password_hash="password123", role="student"),
-        models.Users(name="Eva Brown", email="eva@example.com", password_hash="password123", role="student")
+        models.Users(name="Alice Johnson", email="alice@example.com", password_hash=get_password_hash("password123"), role="student"),
+        models.Users(name="Bob Smith", email="bob@example.com", password_hash=get_password_hash("password123"), role="student"),
+        models.Users(name="Carol Davis", email="carol@example.com", password_hash=get_password_hash("password123"), role="student"),
+        models.Users(name="David Wilson", email="david@example.com", password_hash=get_password_hash("password123"), role="student"),
+        models.Users(name="Eva Brown", email="eva@example.com", password_hash=get_password_hash("password123"), role="student")
     ]
     
     teachers = [
-        models.Users(name="Prof. Anderson", email="anderson@university.edu", password_hash="password123", role="teacher"),
-        models.Users(name="Dr. Baker", email="baker@university.edu", password_hash="password123", role="teacher")
+        models.Users(name="Prof. Anderson", email="anderson@university.edu", password_hash=get_password_hash("password123"), role="teacher"),
+        models.Users(name="Dr. Baker", email="baker@university.edu", password_hash=get_password_hash("password123"), role="teacher")
     ]
     
     # Add users to database

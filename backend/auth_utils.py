@@ -69,6 +69,6 @@ async def get_current_teacher(current_user: models.Users = Depends(get_current_u
 
 async def get_current_student(current_user: models.Users = Depends(get_current_user)) -> models.Users:
     """Get current user if they are a student"""
-    if current_user.role != "student":
+    if current_user.role.value != "student":
         raise HTTPException(status_code=403, detail="Student access required")
     return current_user

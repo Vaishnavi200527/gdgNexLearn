@@ -10,7 +10,6 @@ import asyncio
 from auth_utils import get_current_teacher
 
 router = APIRouter(
-    prefix="/teacher",
     tags=["teacher"]
 )
 

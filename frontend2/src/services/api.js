@@ -83,55 +83,82 @@ async function apiRequest(endpoint, options = {}, cacheKey = null, forceRefresh 
         delete fetchOptions.headers['Content-Type'];
     }
 
-    try {
-        const request = fetch(url, fetchOptions);
-        pendingRequests.set(url, request);
-
-        const response = await request;
-
-        // Handle unauthorized access
-        if (response.status === 401) {
-            // Clear auth token and redirect to login
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('userRole');
-            window.location.href = '/frontend2/pages/login.html';
-            return;
-        }
-
-        // Handle successful responses
-        if (response.ok) {
-            const contentType = response.headers.get('content-type');
-            let data;
-            if (contentType && contentType.includes('application/json')) {
-                data = await response.json();
-            } else {
-                data = await response.text();
-            }
-
-            // Cache the successful response if cacheKey provided
-            if (cacheKey) {
-                setCachedData(cacheKey, data);
-            }
-
-            return data;
-        }
-
-        // Handle error responses
-        let errorMessage = `HTTP Error: ${response.status}`;
+    // Create a promise that resolves to the final data
+    const requestPromise = (async () => {
         try {
-            const errorData = await response.json();
-            errorMessage = errorData.detail || errorData.message || errorMessage;
-        } catch (parseError) {
-            // If we can't parse the error response, use the status text
-            errorMessage = response.statusText || errorMessage;
+            const response = await fetch(url, fetchOptions);
+
+            // Handle unauthorized access (but not for login endpoint)
+            if (response.status === 401 && !endpoint.includes('/token')) {
+                // Clear auth token and redirect to login
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('userRole');
+                window.location.href = '/frontend2/pages/login.html';
+                return;
+            }
+
+            // Handle successful responses
+            if (response.ok) {
+                const contentType = response.headers.get('content-type');
+                let data;
+                if (contentType && contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    data = await response.text();
+                }
+
+                // Cache the successful response if cacheKey provided
+                if (cacheKey) {
+                    setCachedData(cacheKey, data);
+                }
+
+                return data;
+            }
+
+            // Handle error responses
+            let errorMessage = `HTTP Error: ${response.status}`;
+            try {
+                const errorData = await response.json();
+                console.error("Full error response from server:", errorData);
+
+                // Handle FastAPI validation errors (detail can be an array)
+                if (errorData.detail) {
+                    if (Array.isArray(errorData.detail)) {
+                        // Validation errors from Pydantic
+                        const validationErrors = errorData.detail.map(err => {
+                            if (err.loc && err.loc.length > 0) {
+                                const field = err.loc[err.loc.length - 1];
+                                return `${field}: ${err.msg}`;
+                            }
+                            return err.msg || err.message || 'Validation error';
+                        });
+                        errorMessage = `Validation Error:\n${validationErrors.join('\n')}`;
+                    } else {
+                        // Single error message
+                        errorMessage = errorData.detail;
+                    }
+                } else if (errorData.message) {
+                    errorMessage = errorData.message;
+                } else {
+                    errorMessage = errorData.error || errorMessage;
+                }
+            } catch (parseError) {
+                // If we can't parse the error response, use the status text
+                errorMessage = response.statusText || errorMessage;
+            }
+            throw new Error(errorMessage);
+        } catch (error) {
+            console.error(`API request failed: ${error.message}`);
+            throw error;
+        } finally {
+            pendingRequests.delete(url);
         }
-        throw new Error(errorMessage);
-    } catch (error) {
-        console.error(`API request failed: ${error.message}`);
-        throw error;
-    } finally {
-        pendingRequests.delete(url);
-    }
+    })();
+
+    // Store the promise that resolves to the data
+    pendingRequests.set(url, requestPromise);
+
+    return requestPromise;
 }
 
 // Auth endpoints
@@ -146,7 +173,7 @@ export const authAPI = {
     }),
   }),
   
-  login: (credentials) => apiRequest('/token', {
+  login: (credentials) => apiRequest('/auth/token', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -240,9 +267,9 @@ export const teacherAPI = {
     body: JSON.stringify(projects),
   }),
   
-  getDashboard: (teacherId) => apiRequest(`/teacher/dashboard?teacher_id=${teacherId}`),
+  getDashboard: () => apiRequest('/teacher/dashboard'),
   
-  getInterventions: (teacherId) => apiRequest(`/teacher/interventions?teacher_id=${teacherId}`),
+  getInterventions: () => apiRequest('/teacher/interventions'),
   
   createIntervention: (interventionData) => apiRequest('/teacher/intervene', {
     method: 'POST',

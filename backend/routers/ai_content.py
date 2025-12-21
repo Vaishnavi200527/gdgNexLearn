@@ -30,7 +30,7 @@ from services.ai_content_generation import (
 # Load environment variables
 load_dotenv()
 
-router = APIRouter(prefix="/ai", tags=["AI Content Generation"])
+router = APIRouter(tags=["AI Content Generation"])
 
 @router.post("/extract-concept")
 async def extract_concept_from_pdf_endpoint(

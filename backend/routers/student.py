@@ -10,7 +10,6 @@ from sqlalchemy import and_
 from auth_utils import get_current_student, get_current_user
 
 router = APIRouter(
-    prefix="/student",
     tags=["student"]
 )
 

@@ -13,7 +13,7 @@ from database import get_db
 from services.ai_content_generation import extract_concept_from_pdf
 from services.adaptive_learning import get_adaptive_assignments
 
-router = APIRouter(prefix="/pdf-upload", tags=["PDF Upload"])
+router = APIRouter(tags=["PDF Upload"])
 
 @router.post("/process-pdf")
 async def process_pdf(
