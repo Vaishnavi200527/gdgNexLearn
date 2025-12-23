@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 import schemas
 import models
 import database
 from services import adaptive_learning, engagement_tracking, gamification, ai_content_generation
 from sqlalchemy import and_
-from auth_utils import get_current_student, get_current_user
+import auth_utils
+from auth_utils import get_current_student, get_current_user, verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
 
 router = APIRouter(
     tags=["student"]
@@ -37,14 +38,26 @@ def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=schemas.Token)
 def login_user(user: schemas.UserLogin, db: Session = Depends(get_db)):
-    # In a real app, verify password hash
+    # Verify password hash
     db_user = db.query(models.Users).filter(models.Users.email == user.email).first()
-    if not db_user or db_user.password_hash != user.password:
+    if not db_user or not verify_password(user.password, db_user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
-    # Create fake token for demo
-    token_data = schemas.TokenData(email=db_user.email, role=db_user.role)
-    return schemas.Token(access_token=f"fake-jwt-token-for-{db_user.email}", token_type="bearer")
+    # Handle role serialization
+    role_value = db_user.role.value if hasattr(db_user.role, "value") else db_user.role
+    
+    # Create access token
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": db_user.email, "role": role_value},
+        expires_delta=access_token_expires
+    )
+    
+    return schemas.Token(
+        access_token=access_token, 
+        token_type="bearer",
+        role=role_value
+    )
 
 @router.get("/mastery", response_model=List[schemas.MasteryResponse])
 def get_mastery(
@@ -231,7 +244,13 @@ async def get_student_assignments(
         
         # Add to result list
         result.append({
-            **assignment.__dict__,
+            "id": assignment.id,
+            "concept_id": assignment.concept_id,
+            "teacher_id": assignment.teacher_id,
+            "difficulty_level": assignment.difficulty_level if assignment.difficulty_level else 1,
+            "content_url": assignment.content_url,
+            "title": assignment.title,
+            "description": assignment.description,
             "status": sa.status,
             "score": sa.score,
             "submitted_at": sa.submitted_at,

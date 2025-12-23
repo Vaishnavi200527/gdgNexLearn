@@ -144,7 +144,7 @@
                 localStorage.setItem('userName', name);
 
                 // Redirect based on actual user role from token
-                if (actualUserRole === 'STUDENT') {
+                if (actualUserRole.toLowerCase() === 'student') {
                     window.location.href = 'student-dashboard.html';
                 } else {
                     window.location.href = 'teacher-dashboard.html';

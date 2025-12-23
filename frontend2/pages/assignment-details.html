@@ -64,7 +64,7 @@
             const studentId = parseInt(localStorage.getItem('studentId')) || 1;
             
             // First verify that the student has access to this assignment (based on class membership)
-            const assignments = await studentAPI.getAssignments(studentId);
+            const assignments = await studentAPI.getAssignments();
             const assignmentExists = assignments.some(a => a.id == id);
             
             if (!assignmentExists) {

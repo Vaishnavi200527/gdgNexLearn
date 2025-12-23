@@ -35,6 +35,17 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
+def verify_reset_token(token: str) -> Optional[str]:
+    """Verify password reset token and return email"""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("type") != "password_reset":
+            return None
+        email: str = payload.get("sub")
+        return email
+    except jwt.PyJWTError:
+        return None
+
 def get_user(db: Session, email: str) -> models.Users:
     """Get user by email"""
     return db.query(models.Users).filter(models.Users.email == email).first()

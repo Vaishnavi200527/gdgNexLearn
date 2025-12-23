@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.orm import Session
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from services.continuous_assessment import ContinuousAssessmentService, get_continuous_assessment_service
 from database import get_db
 from auth_utils import get_current_student
@@ -11,7 +11,8 @@ router = APIRouter(tags=["Continuous Assessment"])
 
 @router.post("/generate-checks")
 async def generate_understanding_checks(
-    concept_id: int = Body(..., embed=True),
+    concept_id: Optional[int] = Body(None, embed=True),
+    concept_data: Optional[Dict[str, Any]] = Body(None, embed=True),
     db: Session = Depends(get_db),
     current_user: models.Users = Depends(get_current_student)
 ):
@@ -20,6 +21,7 @@ async def generate_understanding_checks(
     
     Args:
         concept_id: ID of the concept to generate checks for
+        concept_data: Optional concept data object that might contain the ID
         db: Database session
         current_user: Current authenticated user
         
@@ -27,6 +29,13 @@ async def generate_understanding_checks(
         List of understanding check questions
     """
     try:
+        # Extract concept_id from concept_data if not provided directly
+        if concept_id is None and concept_data:
+            concept_id = concept_data.get("id")
+            
+        if not concept_id:
+            raise HTTPException(status_code=400, detail="Invalid concept data: missing concept ID")
+            
         service = get_continuous_assessment_service(db)
         questions = service.generate_understanding_checks(concept_id, current_user.id)
         return questions
@@ -61,8 +70,9 @@ async def evaluate_understanding_response(
 
 @router.post("/adapt-content")
 async def adapt_content_based_on_responses(
-    concept_id: int = Body(..., embed=True),
     responses: List[Dict[str, Any]] = Body(..., embed=True),
+    concept_id: Optional[int] = Body(None, embed=True),
+    concept_data: Optional[Dict[str, Any]] = Body(None, embed=True),
     db: Session = Depends(get_db),
     current_user: models.Users = Depends(get_current_student)
 ):
@@ -70,8 +80,9 @@ async def adapt_content_based_on_responses(
     Adapt content delivery based on student responses to understanding checks.
     
     Args:
-        concept_id: ID of the concept being assessed
         responses: List of student responses to understanding checks
+        concept_id: ID of the concept being assessed
+        concept_data: Optional concept data object that might contain the ID
         db: Database session
         current_user: Current authenticated user
         
@@ -79,8 +90,16 @@ async def adapt_content_based_on_responses(
         Adaptation recommendations for content delivery
     """
     try:
+        # Extract concept_id from concept_data if not provided directly
+        final_concept_id = concept_id
+        if final_concept_id is None and concept_data:
+            final_concept_id = concept_data.get("id")
+            
+        if not final_concept_id:
+            raise HTTPException(status_code=400, detail="Invalid concept data: missing concept ID")
+            
         service = get_continuous_assessment_service(db)
-        adaptation = service.adapt_content_based_on_responses(current_user.id, concept_id, responses)
+        adaptation = service.adapt_content_based_on_responses(current_user.id, final_concept_id, responses)
         return adaptation
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error adapting content: {str(e)}")

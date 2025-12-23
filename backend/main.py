@@ -43,6 +43,8 @@ app.include_router(classes_router, prefix="/classes")
 @app.get("/student-api.js")
 async def get_student_api_js():
     js_content = """
+console.log('Student API JS loaded - Version: Loop Protection v3');
+
 // API Request utility function
 async function apiRequest(endpoint, method = 'GET', data = null) {
     const url = `http://localhost:8000${endpoint}`;
@@ -64,6 +66,50 @@ async function apiRequest(endpoint, method = 'GET', data = null) {
     try {
         const response = await fetch(url, config);
         
+        // Global Error Handling for Authentication/Authorization
+        if (response.status === 401) {
+            console.warn('Session expired or unauthorized. Redirecting to login.');
+            localStorage.clear(); // Clear EVERYTHING
+            sessionStorage.clear();
+            window.location.replace('index.html?reason=401'); // Redirect to login
+            return new Promise(() => {}); // Halt execution
+        }
+        
+        if (response.status === 403) {
+            console.warn('Access forbidden (403). Checking role for redirection...');
+            const role = localStorage.getItem('user_role');
+            const r = role ? role.toLowerCase() : '';
+            if (r === 'student') {
+                // LOOP PROTECTION: If already on student dashboard but getting 403, force logout
+                if (window.location.pathname.includes('student-dashboard')) {
+                    console.error('403 Loop Detected. Session corrupted. Forcing logout.');
+                    localStorage.clear();
+                    window.location.replace('index.html?reason=403_loop');
+                    return new Promise(() => {});
+                }
+                console.log('Redirecting student to student dashboard...');
+                window.location.replace('student-dashboard.html');
+                return new Promise(() => {}); // Halt execution to prevent further errors
+            } else if (r === 'teacher') {
+                // LOOP PROTECTION for teachers
+                if (window.location.pathname.includes('teacher-dashboard')) {
+                    console.error('403 Loop Detected. Session corrupted. Forcing logout.');
+                    localStorage.clear();
+                    window.location.replace('index.html?reason=403_loop');
+                    return new Promise(() => {});
+                }
+                console.log('Redirecting teacher to teacher dashboard...');
+                window.location.replace('teacher-dashboard.html');
+                return new Promise(() => {}); // Halt execution to prevent further errors
+            } else {
+                // Fallback if role is missing or unknown
+                console.warn('Role missing on 403. Redirecting to login.');
+                localStorage.clear();
+                window.location.replace('index.html?reason=403_unknown');
+                return new Promise(() => {}); // Halt execution
+            }
+        }
+
         if (!response.ok) {
             const error = await response.json().catch(() => ({}));
             throw new Error(error.detail || 'Request failed');
@@ -91,7 +137,62 @@ const studentAPI = {
     },
 
     login: async (credentials) => {
-        return await apiRequest('/student/login', 'POST', credentials);
+        const response = await apiRequest('/student/login', 'POST', credentials);
+        if (response.access_token) {
+            localStorage.setItem('access_token', response.access_token);
+            if (response.role) {
+                localStorage.setItem('user_role', response.role);
+                // Always redirect on successful login
+                studentAPI.redirectUser(response.role);
+            }
+        }
+        return response;
+    },
+
+    // New method to match the /auth/token endpoint (OAuth2 standard)
+    loginOAuth: async (username, password) => {
+        const formData = new URLSearchParams();
+        formData.append('username', username);
+        formData.append('password', password);
+        
+        const response = await fetch('http://localhost:8000/auth/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: formData
+        });
+        
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.detail || 'Login failed');
+        }
+        
+        const data = await response.json();
+        if (data.access_token) {
+            localStorage.setItem('access_token', data.access_token);
+            if (data.role) {
+                localStorage.setItem('user_role', data.role);
+                studentAPI.redirectUser(data.role);
+            }
+        }
+        return data;
+    },
+
+    // Helper to handle redirection based on role
+    redirectUser: (role) => {
+        console.log('Redirecting user with role:', role);
+        const r = role ? role.toLowerCase() : '';
+        
+        if (r === 'student') {
+            window.location.replace('student-dashboard.html');
+        } else if (r === 'teacher') {
+            window.location.replace('teacher-dashboard.html');
+        } else {
+            console.warn('Unknown role:', role);
+            // Fallback
+            window.location.replace('student-dashboard.html');
+        }
     },
 
     // --- Mastery & Progress ---
@@ -247,8 +348,41 @@ const teacherAPI = {
 // Make APIs globally available
 window.studentAPI = studentAPI;
 window.teacherAPI = teacherAPI;
+
+// --- AUTO-REDIRECT PROTECTION ---
+// This runs immediately when the script loads to ensure users are on the correct page
+(function() {
+    try {
+        const role = localStorage.getItem('user_role');
+        const path = window.location.pathname.toLowerCase();
+        const token = localStorage.getItem('access_token');
+        
+        // Only run checks if we have a token (logged in)
+        if (token && role) {
+            const r = role.toLowerCase();
+            
+            // If student is on teacher dashboard
+            if (r === 'student' && path.includes('teacher-dashboard')) {
+                console.warn('Student detected on teacher dashboard. Redirecting...');
+                window.location.replace('student-dashboard.html');
+            }
+            // If teacher is on student dashboard
+            else if (r === 'teacher' && path.includes('student-dashboard')) {
+                console.warn('Teacher detected on student dashboard. Redirecting...');
+                window.location.replace('teacher-dashboard.html');
+            }
+            // Strict check for student on teacher pages
+            else if (r === 'student' && (path.includes('teacher') || path.includes('class-overview'))) {
+                 console.warn('Student detected on restricted teacher page. Redirecting...');
+                 window.location.replace('student-dashboard.html');
+            }
+        }
+    } catch (e) {
+        console.error('Auto-redirect error:', e);
+    }
+})();
 """
-    return Response(content=js_content, media_type="application/javascript")
+    return Response(content=js_content, media_type="application/javascript", headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
 @app.get("/")
 async def root():

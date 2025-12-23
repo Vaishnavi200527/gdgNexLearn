@@ -39,16 +39,16 @@ async def extract_concept_from_pdf_endpoint(
 ):
     """
     Extract concept information from PDF text
-    
+
     Args:
         pdf_text: The extracted text from a PDF
         api_key: Optional Gemini API key
-        
+
     Returns:
         Extracted concept information
     """
     try:
-        result = extract_concept_from_pdf(pdf_text, api_key)
+        result = await extract_concept_from_pdf(pdf_text, api_key)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error extracting concept: {str(e)}")
@@ -60,16 +60,16 @@ async def generate_explanations_endpoint(
 ):
     """
     Generate different explanation variants for a concept
-    
+
     Args:
         concept_data: Concept information
         api_key: Optional Gemini API key
-        
+
     Returns:
         Different explanation variants (simple, standard, compact)
     """
     try:
-        result = generate_explanation_variants(concept_data, api_key)
+        result = await generate_explanation_variants(concept_data, api_key)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating explanations: {str(e)}")
@@ -81,16 +81,16 @@ async def generate_examples_endpoint(
 ):
     """
     Generate examples based on PDF context
-    
+
     Args:
         pdf_context: Context from PDF
         api_key: Optional Gemini API key
-        
+
     Returns:
         Generated examples (simple, exam-oriented)
     """
     try:
-        result = generate_examples_from_context(pdf_context, api_key)
+        result = await generate_examples_from_context(pdf_context, api_key)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating examples: {str(e)}")
@@ -102,16 +102,16 @@ async def generate_micro_questions_endpoint(
 ):
     """
     Generate micro-questions for concept understanding
-    
+
     Args:
         concept_data: Concept information
         api_key: Optional Gemini API key
-        
+
     Returns:
         Generated micro-questions (MCQ and fill-in-the-blank)
     """
     try:
-        result = generate_micro_questions(concept_data, api_key)
+        result = await generate_micro_questions(concept_data, api_key)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating micro-questions: {str(e)}")
@@ -125,18 +125,18 @@ async def evaluate_answer_endpoint(
 ):
     """
     Evaluate a student's answer
-    
+
     Args:
         concept_name: Name of the concept
         correct_answer: Correct answer
         student_answer: Student's answer
         api_key: Optional Gemini API key
-        
+
     Returns:
         Evaluation result with correctness, confidence, and feedback
     """
     try:
-        result = evaluate_student_answer(concept_name, correct_answer, student_answer, api_key)
+        result = await evaluate_student_answer(concept_name, correct_answer, student_answer, api_key)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error evaluating answer: {str(e)}")
@@ -151,18 +151,18 @@ async def teach_concept_endpoint(
 ):
     """
     Teach a concept to a student based on their level and preferred explanation type
-    
+
     Args:
         concept_data: Concept information
         student_level: Student level (beginner, average, advanced)
         explanation_type: Explanation type (simple, standard, compact)
         api_key: Optional Gemini API key
-        
+
     Returns:
         Teaching material for the concept
     """
     try:
-        result = teach_concept(concept_data, student_level, explanation_type, api_key)
+        result = await teach_concept(concept_data, student_level, explanation_type, api_key)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error teaching concept: {str(e)}")
@@ -175,16 +175,16 @@ async def reteach_concept_endpoint(
 ):
     """
     Re-teach a concept in simpler terms when student struggles
-    
+
     Args:
         concept_data: Concept information
         api_key: Optional Gemini API key
-        
+
     Returns:
         Simplified explanation of the concept
     """
     try:
-        result = reteach_concept(concept_data, api_key)
+        result = await reteach_concept(concept_data, api_key)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error re-teaching concept: {str(e)}")
@@ -198,17 +198,17 @@ async def ask_ai_tutor_endpoint(
 ):
     """
     Answer student questions using AI tutor with RAG from PDF content
-    
+
     Args:
         pdf_chunks: Retrieved PDF chunks as context
         student_question: Student's question
         api_key: Optional Gemini API key
-        
+
     Returns:
         Answer to student's question
     """
     try:
-        result = ask_ai_tutor(pdf_chunks, student_question, api_key)
+        result = await ask_ai_tutor(pdf_chunks, student_question, api_key)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error answering student question: {str(e)}")
@@ -222,17 +222,17 @@ async def reflection_prompt_endpoint(
 ):
     """
     Provide feedback on student's explanation of a concept
-    
+
     Args:
         concept_data: Concept information
         student_response: Student's explanation of the concept
         api_key: Optional Gemini API key
-        
+
     Returns:
         Feedback on student's explanation
     """
     try:
-        result = reflection_prompt(concept_data, student_response, api_key)
+        result = await reflection_prompt(concept_data, student_response, api_key)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error providing reflection feedback: {str(e)}")
@@ -247,18 +247,18 @@ async def analyze_learning_state_endpoint(
 ):
     """
     Analyze student's learning behavior and recommend adaptive strategies
-    
+
     Args:
         accuracy: Student's accuracy percentage
         response_time: Average response time in seconds
         attempts: Number of attempts
         api_key: Optional Gemini API key
-        
+
     Returns:
         Analysis of learning state with recommendations
     """
     try:
-        result = analyze_learning_state(accuracy, response_time, attempts, api_key)
+        result = await analyze_learning_state(accuracy, response_time, attempts, api_key)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error analyzing learning state: {str(e)}")
@@ -271,16 +271,16 @@ async def detect_confusing_concepts_endpoint(
 ):
     """
     Detect confusing concepts based on class performance data
-    
+
     Args:
         class_analytics: Class performance data
         api_key: Optional Gemini API key
-        
+
     Returns:
         Analysis of confusing concepts
     """
     try:
-        result = detect_confusing_concepts(class_analytics, api_key)
+        result = await detect_confusing_concepts(class_analytics, api_key)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error detecting confusing concepts: {str(e)}")
@@ -293,16 +293,16 @@ async def weekly_teacher_summary_endpoint(
 ):
     """
     Generate a weekly summary for the teacher
-    
+
     Args:
         aggregated_class_data: Aggregated class data
         api_key: Optional Gemini API key
-        
+
     Returns:
         Weekly summary for the teacher
     """
     try:
-        result = generate_weekly_teacher_summary(aggregated_class_data, api_key)
+        result = await generate_weekly_teacher_summary(aggregated_class_data, api_key)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating weekly teacher summary: {str(e)}")
@@ -315,16 +315,16 @@ async def format_ui_explanation_endpoint(
 ):
     """
     Format an explanation for UI display on a learning card
-    
+
     Args:
         raw_explanation: Raw explanation text
         api_key: Optional Gemini API key
-        
+
     Returns:
         Formatted explanation for UI display
     """
     try:
-        result = format_ui_friendly_explanation(raw_explanation, api_key)
+        result = await format_ui_friendly_explanation(raw_explanation, api_key)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error formatting UI-friendly explanation: {str(e)}")

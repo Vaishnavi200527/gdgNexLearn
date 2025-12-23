@@ -186,7 +186,7 @@ export const authAPI = {
 export const studentAPI = {
   getMastery: () => apiRequest('/student/mastery', {}, 'mastery'),
 
-  getAssignments: (studentId) => apiRequest(`/student/assignments?student_id=${studentId}`, {}, `assignments_${studentId}`),
+  getAssignments: () => apiRequest('/student/assignments', {}, 'assignments'),
 
   getAssignmentById: (assignmentId) => apiRequest(`/student/assignments/${assignmentId}`, {}, `assignment_${assignmentId}`),
 
@@ -203,11 +203,11 @@ export const studentAPI = {
     body: JSON.stringify(engagementData),
   }),
 
-  getProjects: (studentId) => apiRequest(`/student/projects?student_id=${studentId}`, {}, `projects_${studentId}`),
+  getProjects: () => apiRequest('/student/projects', {}, 'projects'),
 
   getLeaderboard: () => apiRequest('/student/leaderboard', {}, 'leaderboard'),
 
-  getBadges: (studentId) => apiRequest(`/student/badges?student_id=${studentId}`, {}, `badges_${studentId}`),
+  getBadges: () => apiRequest('/student/badges', {}, 'badges'),
 
   getQuizzes: () => apiRequest('/api/quizzes/student', {}, 'quizzes'),
 

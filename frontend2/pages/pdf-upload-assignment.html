@@ -739,76 +739,95 @@
             finalizeAssignment.disabled = true;
             
             try {
-                // For now, we'll create a single assignment with the first concept
-                // In a full implementation, we would create assignments for all concepts
+                // Create assignments for all extracted concepts
                 if (conceptsArray.length > 0) {
-                    const firstConcept = conceptsArray[0];
-                    console.log('First concept:', firstConcept);
+                    const assignmentData = [];
 
-                    // Validate concept data
-                    if (!firstConcept || !firstConcept.id) {
-                        alert('Invalid concept data: missing concept ID');
+                    for (const concept of conceptsArray) {
+                        console.log('Processing concept:', concept);
+
+                        // Validate concept data - ensure it's an object with a valid ID
+                        if (!concept || typeof concept !== 'object' || !('id' in concept) || !concept.id) {
+                            console.error('Invalid concept data: missing or invalid concept ID for concept:', concept);
+                            continue; // Skip this concept but continue with others
+                        }
+
+                        // Create assignment data for this concept
+                        assignmentData.push({
+                            concept_id: parseInt(concept.id, 10),
+                            difficulty_level: 3, // Default difficulty
+                            title: `[PDF] ${assignmentTitle.value} - ${concept.name}`,
+                            description: instructions || `Adaptive learning assignment based on PDF content: ${assignmentTitle.value}. Focus: ${concept.name}`,
+                            content_url: "http://placeholder.com/pdf-content"
+                        });
+                    }
+
+                    if (assignmentData.length === 0) {
+                        alert('No valid concepts found to create assignments. Please try processing the PDF again.');
                         return;
                     }
 
-                    // Create assignment data
-                    const assignmentData = [{
-                        concept_id: parseInt(firstConcept.id, 10),
-                        difficulty_level: 3, // Default difficulty
-                        title: `[PDF] ${assignmentTitle.value}`,
-                        description: instructions || `Adaptive learning assignment based on PDF content: ${assignmentTitle.value}`,
-                        content_url: "http://placeholder.com/pdf-content"
-                    }];
-                    
-                    console.log('Creating assignment with data:', JSON.stringify(assignmentData, null, 2));
-                    
-                    // Create assignment through teacher API
+                    console.log('Creating assignments with data:', JSON.stringify(assignmentData, null, 2));
+
+                    // Create assignments through teacher API
                     const createdAssignments = await teacherAPI.createAssignments(assignmentData);
-                    
+
                     console.log('Created assignments response:', createdAssignments);
-                    
+
                     // Handle both possible response formats
-                    let createdAssignment = null;
+                    let createdAssignmentsList = [];
                     if (createdAssignments && createdAssignments.assignments && createdAssignments.assignments.length > 0) {
                         // Format: {message: "...", assignments: [...]}
-                        createdAssignment = createdAssignments.assignments[0];
+                        createdAssignmentsList = createdAssignments.assignments;
                     } else if (createdAssignments && Array.isArray(createdAssignments) && createdAssignments.length > 0) {
                         // Format: [...]
-                        createdAssignment = createdAssignments[0];
+                        createdAssignmentsList = createdAssignments;
                     } else if (createdAssignments && createdAssignments.id) {
                         // Format: single assignment object
-                        createdAssignment = createdAssignments;
+                        createdAssignmentsList = [createdAssignments];
                     } else if (createdAssignments && typeof createdAssignments === 'object' && !Array.isArray(createdAssignments)) {
                         // Handle direct object response
-                        createdAssignment = createdAssignments;
+                        createdAssignmentsList = [createdAssignments];
                     }
-                    
-                    if (createdAssignment && createdAssignment.id) {
-                        console.log('Created assignment:', createdAssignment);
-                        
-                        // Assign the created assignment to the selected class
+
+                    if (createdAssignmentsList.length > 0) {
+                        console.log('Created assignments:', createdAssignmentsList);
+
+                        // Assign all created assignments to the selected class
                         // Format due_date properly for the backend
                         let assignmentDueDate = null;
                         if (dueDate) {
                             // Convert to ISO string format that the backend expects
                             assignmentDueDate = new Date(dueDate).toISOString();
                         }
-                        
-                        const assignmentToClassData = {
-                            assignment_id: parseInt(createdAssignment.id, 10),
-                            due_date: assignmentDueDate
-                        };
-                        
-                        console.log('Assigning assignment to class with data:', assignmentToClassData);
-                        console.log('Class ID:', classIdInt);
-                        
-                        const assignmentResult = await teacherAPI.assignAssignmentToClass(classIdInt, assignmentToClassData);
-                        console.log('Assignment to class result:', assignmentResult);
-                        
-                        // Store the created assignment ID in localStorage for easy access
-                        localStorage.setItem('lastCreatedAssignmentId', createdAssignment.id);
+
+                        // Assign each assignment to the class
+                        for (const createdAssignment of createdAssignmentsList) {
+                            if (createdAssignment && createdAssignment.id) {
+                                const assignmentToClassData = {
+                                    assignment_id: parseInt(createdAssignment.id, 10),
+                                    due_date: assignmentDueDate
+                                };
+
+                                console.log('Assigning assignment to class with data:', assignmentToClassData);
+                                console.log('Class ID:', classIdInt);
+
+                                try {
+                                    const assignmentResult = await teacherAPI.assignAssignmentToClass(classIdInt, assignmentToClassData);
+                                    console.log('Assignment to class result:', assignmentResult);
+                                } catch (assignError) {
+                                    console.error('Error assigning assignment to class:', assignError);
+                                    // Continue with other assignments even if one fails
+                                }
+                            }
+                        }
+
+                        // Store the first created assignment ID in localStorage for easy access
+                        if (createdAssignmentsList[0] && createdAssignmentsList[0].id) {
+                            localStorage.setItem('lastCreatedAssignmentId', createdAssignmentsList[0].id);
+                        }
                     } else {
-                        throw new Error('Failed to create assignment - invalid response format or missing assignment ID');
+                        throw new Error('Failed to create assignments - invalid response format or missing assignment IDs');
                     }
                 }
                 

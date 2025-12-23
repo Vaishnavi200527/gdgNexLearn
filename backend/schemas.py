@@ -286,10 +286,18 @@ class AIGeneratedProject(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    role: str
 
 class TokenData(BaseModel):
     email: str
     role: UserRole
+
+class PasswordResetRequest(BaseModel):
+    email: str
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str
 
 class NotificationResponse(BaseModel):
     id: int

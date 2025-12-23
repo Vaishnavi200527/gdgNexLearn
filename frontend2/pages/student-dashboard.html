@@ -183,9 +183,9 @@
                     
                     // Fetch real data from backend
                     const masteryData = await studentAPI.getMastery();
-                    const assignmentsData = await studentAPI.getAssignments(studentId);
-                    const badgesData = await studentAPI.getBadges(studentId);
-                    const projectsData = await studentAPI.getProjects(studentId);
+                    const assignmentsData = await studentAPI.getAssignments();
+                    const badgesData = await studentAPI.getBadges();
+                    const projectsData = await studentAPI.getProjects();
                     
                     // Combine assignments and projects
                     const upcomingContent = [...assignmentsData, ...projectsData];

@@ -312,10 +312,18 @@ async function fetchAssignmentsData() {
         const studentId = localStorage.getItem('studentId') || 1;
         console.log('Fetching assignments for student ID:', studentId);
         
-        // Call the API with the student ID
-        const response = await studentAPI.getAssignments(studentId);
+        // Call the API without student ID (uses JWT token)
+        const response = await studentAPI.getAssignments();
         console.log('Raw API response:', response);
         
+        if (response.error) {
+            console.error('Error fetching assignments:', response.error);
+            if (response.error === 'Authentication required') {
+                 window.location.href = 'login.html';
+            }
+            return;
+        }
+
         // The backend might be returning the data directly as an array
         let assignmentsData = [];
         

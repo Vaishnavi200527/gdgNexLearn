@@ -8,19 +8,22 @@ class StudentAPI {
     constructor(apiService) {
         this.api = apiService;
         this.pendingRequests = new Map();
-        this.ensureAuthenticated();
+        // Don't check authentication in constructor - do it when making API calls
+        // this.ensureAuthenticated();
     }
 
     ensureAuthenticated() {
         // Try multiple possible token keys
         const token = localStorage.getItem('access_token') ||
                      localStorage.getItem('auth_token') ||
+                     localStorage.getItem('authToken') ||
                      sessionStorage.getItem('access_token') ||
-                     sessionStorage.getItem('auth_token');
+                     sessionStorage.getItem('auth_token') ||
+                     sessionStorage.getItem('authToken');
 
         if (!token) {
             console.warn('No authentication token found. User not logged in.');
-            window.location.href = '/login.html';
+            // Don't redirect here - let individual API calls handle auth failures
             return false;
         }
 
