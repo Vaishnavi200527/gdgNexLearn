@@ -247,8 +247,11 @@
                 updateMasteryDisplay(masteryData);
             } catch (error) {
                 console.error('Error fetching mastery data:', error);
+                const container = document.getElementById('mastery-items-container');
+                container.innerHTML = `<div class="text-center py-8 text-red-400">Failed to load mastery data. Please ensure the server is running and try again.</div>`;
+                document.getElementById('overall-mastery').textContent = 'Error';
+                document.getElementById('skills-mastered').textContent = 'Error';
                 // Fallback to showing no data
-                updateMasteryDisplay([]);
             }
         }
         

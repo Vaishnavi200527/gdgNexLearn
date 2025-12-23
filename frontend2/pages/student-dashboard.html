@@ -207,20 +207,14 @@
                     updateContentDisplay(statsData.upcomingContent);
                 } catch (error) {
                     console.error('Error fetching student stats:', error);
-                    // Fallback to showing no data
-                    const emptyData = {
-                        activeCourses: 0,
-                        completedModules: 0,
-                        badgesEarned: 0,
-                        overallProgress: 0,
-                        masteryData: [],
-                        recentActivity: [],
-                        upcomingContent: []
-                    };
-                    updateStatsDisplay(emptyData);
-                    updateMasteryDisplay([]);
-                    updateActivityDisplay([]);
-                    updateContentDisplay([]);
+                    // Display error state on the dashboard
+                    document.getElementById('active-courses').textContent = 'Error';
+                    document.getElementById('completed-modules').textContent = 'Error';
+                    document.getElementById('badges-earned').textContent = 'Error';
+                    document.getElementById('overall-progress').textContent = 'Error';
+                    document.getElementById('subject-mastery-container').innerHTML = '<div class="text-center py-4 text-red-400">Failed to load mastery data.</div>';
+                    document.getElementById('recent-activity-container').innerHTML = '<div class="text-center py-4 text-red-400">Failed to load recent activity.</div>';
+                    document.getElementById('upcoming-content-container').innerHTML = '<div class="text-center py-4 text-red-400">Failed to load upcoming content.</div>';
                 }
             }
             
