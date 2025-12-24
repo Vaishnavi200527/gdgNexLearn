@@ -8,6 +8,13 @@ from auth_utils import get_password_hash
 def seed_database():
     db: Session = database.SessionLocal()
     
+    # Check if users already exist to avoid duplicating data
+    existing_users = db.query(models.Users).count()
+    if existing_users > 0:
+        print("Database already has users, skipping seeding")
+        db.close()
+        return
+    
     # Clear existing data
     db.query(models.TeacherInterventions).delete()
     db.query(models.StudentBadges).delete()
