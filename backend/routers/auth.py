@@ -7,6 +7,7 @@ import schemas
 import models
 import auth_utils
 from services.email_service import EmailService
+import os
 
 router = APIRouter()
 

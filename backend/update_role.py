@@ -1,21 +1,21 @@
-from database import SessionLocal
-import models
+import sqlite3
 
-def set_teacher_role(email: str):
-    db = SessionLocal()
-    try:
-        user = db.query(models.Users).filter(models.Users.email == email).first()
-        if user:
-            user.role = models.UserRole.TEACHER
-            db.commit()
-            print(f"Success: User '{email}' has been updated to role 'teacher'.")
-        else:
-            print(f"Error: User with email '{email}' not found.")
-    except Exception as e:
-        print(f"An error occurred: {e}")
-    finally:
-        db.close()
+# Connect to the database
+conn = sqlite3.connect('amep.db')
+cursor = conn.cursor()
 
-if __name__ == "__main__":
-    target_email = input("Enter the email address to promote to teacher: ")
-    set_teacher_role(target_email)
+# Update the user's role to teacher
+cursor.execute("UPDATE users SET role = 'teacher' WHERE email = 'dishakulkarni2005@gmail.com'")
+
+if cursor.rowcount > 0:
+    conn.commit()
+    print("User role updated successfully!")
+    
+    # Verify the update
+    cursor.execute("SELECT id, name, email, role FROM users WHERE email = 'dishakulkarni2005@gmail.com'")
+    result = cursor.fetchone()
+    print(f"Updated user: ID {result[0]}, Name {result[1]}, Email {result[2]}, Role {result[3]}")
+else:
+    print("No user found with that email address.")
+
+conn.close()

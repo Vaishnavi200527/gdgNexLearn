@@ -78,6 +78,15 @@
             // Fetch assignment data from backend
             const assignment = await studentAPI.getAssignmentById(id);
             
+            // Fetch concept explanations for this assignment
+            let concepts = null;
+            try {
+                concepts = await studentAPI.getAssignmentConcepts(id, 'comprehensive');
+            } catch (conceptError) {
+                console.warn('No concept explanations available for this assignment:', conceptError);
+                // Continue with assignment details only
+            }
+            
             // Transform backend data to match frontend structure
             const transformedAssignment = {
                 title: assignment.title,
@@ -97,6 +106,20 @@
             };
             
             updateAssignmentDetails(transformedAssignment);
+            
+            // Update concept explanations if available
+            if (concepts && concepts.explanation) {
+                updateConceptExplanations(concepts.explanation);
+            } else {
+                // Show a message when no concepts are available
+                const conceptsSection = document.querySelector('.concepts-section');
+                if (conceptsSection) {
+                    conceptsSection.innerHTML = `
+                        <h2 class="text-white text-xl font-bold mb-3">Concept Explanations</h2>
+                        <p class="text-[#c1d3d1] text-base font-normal leading-relaxed">No concept explanations available for this assignment yet. Check back after the AI has processed the assignment materials.</p>
+                    `;
+                }
+            }
         } catch (error) {
             console.error('Error fetching assignment details:', error);
             
@@ -104,6 +127,35 @@
             document.querySelector('h1').textContent = 'Error Loading Assignment';
             document.querySelector('p.text-[#9cbab7]').textContent = 'Failed to load assignment details.';
             document.querySelector('p.text-[#c1d3d1]').textContent = 'Please try again later or contact your instructor.';
+        }
+    }
+    
+    function updateConceptExplanations(explanationText) {
+        // Find the section where we want to insert the concepts
+        const descriptionSection = document.querySelector('.bg-white\/5.backdrop-blur-md.rounded-xl.border.border-white\/10.p-6');
+        
+        if (descriptionSection) {
+            // Create a new section for concepts
+            const conceptsSection = document.createElement('div');
+            conceptsSection.className = 'concepts-section bg-white/5 backdrop-blur-md rounded-xl border border-white/10 p-6 mt-6';
+            
+            // Format the explanation text
+            let formattedExplanation = explanationText;
+            if (typeof explanationText === 'string') {
+                // Convert newlines to paragraphs
+                formattedExplanation = explanationText.split('\n').filter(line => line.trim() !== '').map(line => `<p class="text-[#c1d3d1] text-base font-normal leading-relaxed">${line.trim()}</p>`).join('');
+            } else if (typeof explanationText === 'object') {
+                // If it's an object, convert to string representation
+                formattedExplanation = `<p class="text-[#c1d3d1] text-base font-normal leading-relaxed">${JSON.stringify(explanationText, null, 2)}</p>`;
+            }
+            
+            conceptsSection.innerHTML = `
+                <h2 class="text-white text-xl font-bold mb-3">Concept Explanations</h2>
+                ${formattedExplanation}
+            `;
+            
+            // Insert the concepts section after the description section
+            descriptionSection.parentNode.insertBefore(conceptsSection, descriptionSection.nextSibling);
         }
     }
     

@@ -6,6 +6,7 @@ import schemas
 import models
 import database
 from services import adaptive_learning, engagement_tracking, gamification, ai_content_generation
+from services.concept_explanation_storage import ConceptExplanationStorage
 from sqlalchemy import and_
 import auth_utils
 from auth_utils import get_current_student, get_current_user, verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
@@ -169,6 +170,45 @@ def get_assignment_by_id(
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
     return assignment
+
+@router.get("/assignments/{assignment_id}/concepts")
+def get_assignment_concepts(
+    assignment_id: int,
+    detail_level: str = 'medium',
+    db: Session = Depends(get_db),
+    current_user: models.Users = Depends(get_current_student)
+):
+    """
+    Get detailed concept explanations for an assignment
+    """
+    if detail_level not in ['basic', 'medium', 'comprehensive']:
+        raise HTTPException(400, "detail_level must be 'basic', 'medium', or 'comprehensive'")
+    
+    # Get assignment
+    assignment = db.query(models.Assignments).filter(models.Assignments.id == assignment_id).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    
+    # Get concept for this assignment
+    if not assignment.concept_id:
+        raise HTTPException(404, detail="No concept associated with this assignment")
+    
+    # Get concept explanation
+    storage = ConceptExplanationStorage(db)
+    explanation = storage.get_concept_explanation(assignment.concept_id, detail_level)
+    
+    if not explanation:
+        raise HTTPException(404, detail="No explanation found for this assignment's concept")
+    
+    return {
+        "success": True,
+        "assignment_id": assignment_id,
+        "assignment_title": assignment.title,
+        "concept_id": assignment.concept_id,
+        "concept_name": assignment.concept.name if assignment.concept else "Unknown",
+        "detail_level": detail_level,
+        "explanation": explanation
+    }
 
 @router.post("/engagement")
 def log_engagement(engagement: schemas.EngagementLogCreate, db: Session = Depends(get_db)):

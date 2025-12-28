@@ -213,6 +213,8 @@ export const studentAPI = {
 
   getQuizById: (quizId) => apiRequest(`/api/quizzes/${quizId}`, {}, `quiz_${quizId}`),
 
+  getAssignmentConcepts: (assignmentId, detailLevel = 'medium') => apiRequest(`/student/assignments/${assignmentId}/concepts?detail_level=${detailLevel}`, {}, `assignment_concepts_${assignmentId}`),
+  
   submitQuiz: (quizId, answers) => apiRequest(`/api/quizzes/${quizId}/submit`, {
     method: 'POST',
     body: JSON.stringify({ answers }),

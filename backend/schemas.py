@@ -40,6 +40,10 @@ class UserResponse(UserBase):
 class ConceptBase(BaseModel):
     name: str
     description: str
+    irt_difficulty: float = 0.0
+    discrimination_index: float = 1.0
+    id_slug: Optional[str] = None
+    prerequisite_ids: Optional[str] = None
 
 class ConceptCreate(ConceptBase):
     pass
@@ -433,6 +437,8 @@ class QuizQuestionBase(BaseModel):
     question_text: str
     options: dict
     correct_answer: str
+    irt_difficulty: float = 0.0
+    discrimination_index: float = 1.0
 
 class QuizQuestionCreate(QuizQuestionBase):
     pass

@@ -63,12 +63,12 @@ class StudentAPI {
         }
     }
 
-    async getAssignments(studentId = 1, forceRefresh = false) {
+    async getAssignments(forceRefresh = false) {
         if (!this.ensureAuthenticated()) {
             return { error: 'Authentication required' };
         }
 
-        const cacheKey = `assignments_${studentId}`;
+        const cacheKey = 'assignments';
 
         // Return cached response if available and not forcing refresh
         if (!forceRefresh) {
@@ -84,7 +84,7 @@ class StudentAPI {
         }
 
         try {
-            const request = this.api.request(`/student/assignments?student_id=${studentId}`, {
+            const request = this.api.request('/student/assignments', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -187,7 +187,67 @@ class StudentAPI {
             console.warn('Error clearing cache:', error);
         }
     }
+
+    async getAssignmentConcepts(assignmentId, detailLevel = 'medium') {
+        if (!this.ensureAuthenticated()) {
+            throw new Error('Authentication required');
+        }
+
+        const cacheKey = `assignment_concepts_${assignmentId}_${detailLevel}`;
+
+        // Return cached response if available
+        const cached = this.getCachedData(cacheKey);
+        if (cached) {
+            return Promise.resolve(cached);
+        }
+
+        // Check if there's already a pending request for this data
+        if (this.pendingRequests.has(cacheKey)) {
+            return this.pendingRequests.get(cacheKey);
+        }
+
+        try {
+            const request = this.api.request(`/student/assignments/${assignmentId}/concepts?detail_level=${detailLevel}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.api.token || localStorage.getItem('token')}`
+                }
+            });
+
+            // Store the promise in pending requests
+            this.pendingRequests.set(cacheKey, request);
+
+            const response = await request;
+
+            // Cache the successful response
+            this.setCachedData(cacheKey, response);
+
+            return response;
+        } catch (error) {
+            console.error('Error fetching assignment concepts:', error);
+            if (error.status === 401) {
+                // Clear auth data and redirect to login
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('token');
+                sessionStorage.removeItem('access_token');
+                sessionStorage.removeItem('auth_token');
+                window.location.href = '/login.html';
+            }
+            // If we have a cached response, return it even if there's an error
+            const cached = this.getCachedData(cacheKey);
+            if (cached) {
+                console.warn('Using cached data due to error:', error.message);
+                return cached;
+            }
+            throw error;
+        } finally {
+            // Remove from pending requests
+            this.pendingRequests.delete(cacheKey);
+        }
+    }
 }
 
 // Create and export a singleton instance
+// Export the API instance
 export const studentAPI = new StudentAPI(apiService);
