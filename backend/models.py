@@ -31,7 +31,7 @@ class Users(Base):
     role = Column(Enum(UserRole), nullable=False)
     
     # Relationships
-    student_mastery = relationship("StudentMastery", back_populates="student")
+    mastery_scores = relationship("MasteryScores", back_populates="student")
     student_assignments = relationship("StudentAssignments", back_populates="student")
     project_teams = relationship("ProjectTeams", back_populates="student")
     engagement_logs = relationship("EngagementLogs", back_populates="student")
@@ -40,35 +40,61 @@ class Users(Base):
     student_xp = relationship("StudentXP", back_populates="student", uselist=False)
     student_streaks = relationship("StudentStreaks", back_populates="student", uselist=False)
     student_badges = relationship("StudentBadges", back_populates="student")
-    concept_progress = relationship("ConceptProgress", back_populates="student")
     interventions_as_student = relationship("TeacherInterventions", foreign_keys="TeacherInterventions.student_id", back_populates="student")
     interventions_as_teacher = relationship("TeacherInterventions", foreign_keys="TeacherInterventions.teacher_id", back_populates="teacher")
     taught_classes = relationship("Classes", foreign_keys="Classes.teacher_id", back_populates="teacher")
     class_enrollments = relationship("ClassEnrollments", back_populates="student")
     notifications = relationship("Notification", back_populates="user")
+    attempts = relationship("Attempt", back_populates="student")
 
-class Concepts(Base):
+class Concept(Base):
     __tablename__ = "concepts"
-    
+
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    description = Column(String, nullable=False)
+    subject = Column(String, nullable=True)
+    concept_name = Column(String, nullable=False)
+    description = Column(String)
     
     # Relationships
-    student_mastery = relationship("StudentMastery", back_populates="concept")
-    assignments = relationship("Assignments", back_populates="concept")
-    concept_progress = relationship("ConceptProgress", back_populates="concept")
+    mastery_scores = relationship("MasteryScores", back_populates="concept")
+    questions = relationship("Question", back_populates="concept")
 
-class StudentMastery(Base):
-    __tablename__ = "student_mastery"
+# Alias Concepts to Concept to fix typo in PDF upload module
+Concepts = Concept
+
+class MasteryScores(Base):
+    __tablename__ = "mastery_scores"
     
     student_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
     concept_id = Column(Integer, ForeignKey("concepts.id"), primary_key=True)
     mastery_score = Column(Float, default=0.0)  # 0-100
     
     # Relationships
-    student = relationship("Users", back_populates="student_mastery")
-    concept = relationship("Concepts", back_populates="student_mastery")
+    student = relationship("Users", back_populates="mastery_scores")
+    concept = relationship("Concept", back_populates="mastery_scores")
+
+class Question(Base):
+    __tablename__ = "questions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    concept_id = Column(Integer, ForeignKey("concepts.id"))
+    question_text = Column(String, nullable=False)
+    correct_answer = Column(String, nullable=False)
+    difficulty = Column(String, nullable=False)  # "easy", "medium", "hard"
+
+    concept = relationship("Concept", back_populates="questions")
+    attempts = relationship("Attempt", back_populates="question")
+
+class Attempt(Base):
+    __tablename__ = "attempts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(Integer, ForeignKey("users.id"))
+    question_id = Column(Integer, ForeignKey("questions.id"))
+    is_correct = Column(Boolean, nullable=False)
+
+    student = relationship("Users", back_populates="attempts")
+    question = relationship("Question", back_populates="attempts")
 
 class Assignments(Base):
     __tablename__ = "assignments"
@@ -82,7 +108,6 @@ class Assignments(Base):
     description = Column(String)
     
     # Relationships
-    concept = relationship("Concepts", back_populates="assignments")
     student_assignments = relationship("StudentAssignments", back_populates="assignment")
 
 class StudentAssignments(Base):
@@ -187,19 +212,6 @@ class StudentBadges(Base):
     # Relationships
     student = relationship("Users", back_populates="student_badges")
 
-class ConceptProgress(Base):
-    __tablename__ = "concept_progress"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    student_id = Column(Integer, ForeignKey("users.id"))
-    concept_id = Column(Integer, ForeignKey("concepts.id"))
-    mastery_score = Column(Float, default=0.0)  # 0-100
-    level = Column(Integer, default=1)  # Duolingo-style levels
-    
-    # Relationships
-    student = relationship("Users", back_populates="concept_progress")
-    concept = relationship("Concepts", back_populates="concept_progress")
-
 class TeacherInterventions(Base):
     __tablename__ = "teacher_interventions"
     
@@ -214,7 +226,7 @@ class TeacherInterventions(Base):
     # Relationships
     teacher = relationship("Users", foreign_keys=[teacher_id], back_populates="interventions_as_teacher")
     student = relationship("Users", foreign_keys=[student_id], back_populates="interventions_as_student")
-    concept = relationship("Concepts", foreign_keys=[concept_id])
+    concept = relationship("Concept", foreign_keys=[concept_id])
 
 class Classes(Base):
     __tablename__ = "classes"
@@ -301,11 +313,13 @@ class QuizQuestion(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     quiz_id = Column(Integer, ForeignKey('quizzes.id'))
+    concept_id = Column(Integer, ForeignKey('concepts.id'), nullable=True)  # Link to concept for mastery tracking
     question_text = Column(String, nullable=False)
     options = Column(JSON, nullable=False)  # e.g., {"A": "Option 1", "B": "Option 2"}
     correct_answer = Column(String, nullable=False) # e.g., "A"
 
     quiz = relationship('Quiz', back_populates='questions')
+    concept = relationship('Concept')
 
 class ClassQuizzes(Base):
     __tablename__ = 'class_quizzes'

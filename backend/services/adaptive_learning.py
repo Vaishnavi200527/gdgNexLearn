@@ -50,8 +50,8 @@ def get_adaptive_assignments(student_id: int, db: Session) -> List[schemas.Adapt
     Returns empty list for students who haven't completed any assignments yet.
     """
     # Get student's current mastery levels
-    mastery_records = db.query(models.StudentMastery).filter(
-        models.StudentMastery.student_id == student_id
+    mastery_records = db.query(models.MasteryScores).filter(
+        models.MasteryScores.student_id == student_id
     ).all()
     
     # For students who haven't completed any assignments, return empty list
@@ -95,9 +95,9 @@ def update_mastery_score(student_id: int, concept_id: int, score: float, db: Ses
     Update student's mastery score for a concept after assignment submission using BKT.
     """
     # Get current mastery record
-    mastery_record = db.query(models.StudentMastery).filter(
-        models.StudentMastery.student_id == student_id,
-        models.StudentMastery.concept_id == concept_id
+    mastery_record = db.query(models.MasteryScores).filter(
+        models.MasteryScores.student_id == student_id,
+        models.MasteryScores.concept_id == concept_id
     ).first()
     
     # Convert percentage score to correctness (1 if >= 70%, 0 otherwise)

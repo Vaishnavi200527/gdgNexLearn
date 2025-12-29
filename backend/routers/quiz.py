@@ -155,20 +155,69 @@ def submit_quiz(
     if not db_quiz:
         raise HTTPException(status_code=404, detail="Quiz not found")
 
-    # Grade the quiz
+    # Grade the quiz and store attempts
     score = 0
     total_questions = len(db_quiz.questions)
+    concept_attempts = {}  # Track attempts per concept
+
     for question in db_quiz.questions:
         student_answer = submission.answers.get(str(question.id))
-        if student_answer and student_answer == question.correct_answer:
+        is_correct = student_answer == question.correct_answer if student_answer else False
+
+        if is_correct:
             score += 1
-    
+
+        # Store attempt
+        attempt = models.Attempt(
+            student_id=current_user.id,
+            question_id=question.id,
+            is_correct=is_correct
+        )
+        db.add(attempt)
+
+        # Group attempts by concept
+        concept_id = question.concept_id
+        if concept_id not in concept_attempts:
+            concept_attempts[concept_id] = []
+        concept_attempts[concept_id].append(is_correct)
+
     percentage_score = (score / total_questions) * 100 if total_questions > 0 else 0
 
     # Update the student_quiz record
     student_quiz.score = percentage_score
     student_quiz.status = "submitted"
     student_quiz.submitted_at = datetime.utcnow()
+
+    # Recalculate mastery for each concept
+    for concept_id, attempts in concept_attempts.items():
+        # Get all attempts for this student and concept
+        all_attempts = db.query(models.Attempt).join(models.Question).filter(
+            models.Attempt.student_id == current_user.id,
+            models.Question.concept_id == concept_id
+        ).all()
+
+        total_correct = sum(1 for a in all_attempts if a.is_correct)
+        total_attempts_count = len(all_attempts)
+
+        # Calculate mastery score
+        mastery_score = (total_correct / total_attempts_count) * 100 if total_attempts_count > 0 else 0
+
+        # Update or create mastery record
+        mastery_record = db.query(models.MasteryScores).filter(
+            models.MasteryScores.student_id == current_user.id,
+            models.MasteryScores.concept_id == concept_id
+        ).first()
+
+        if mastery_record:
+            mastery_record.mastery_score = mastery_score
+        else:
+            mastery_record = models.MasteryScores(
+                student_id=current_user.id,
+                concept_id=concept_id,
+                mastery_score=mastery_score
+            )
+            db.add(mastery_record)
+
     db.commit()
     db.refresh(student_quiz)
 

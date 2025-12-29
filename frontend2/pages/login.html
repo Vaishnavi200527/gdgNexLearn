@@ -112,51 +112,59 @@
         loginBtn.innerHTML = '<span class="truncate">Logging in...</span>';
         loginBtn.disabled = true;
         
-        // Use the authAPI.login function
-        authAPI.login({ email, password })
-            .then(data => {
-                console.log('Login response data:', data);
+        // Bypass authAPI and use fetch directly to ensure correct Content-Type
+        const formData = new URLSearchParams();
+        formData.append('username', email);
+        formData.append('password', password);
 
-                // Check if data and access_token exist
-                if (!data || !data.access_token) {
-                    throw new Error('Invalid login response: missing access token');
-                }
+        fetch('http://localhost:8000/auth/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw new Error(err.detail || 'Login failed'); });
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Login response data:', data);
 
-                // Parse the JWT token to get the user's actual role
-                const tokenPayload = parseJwt(data.access_token);
-                console.log('Token payload:', tokenPayload);
+            if (!data || !data.access_token) {
+                throw new Error('Invalid login response: missing access token');
+            }
 
-                // Extract role from token
-                let actualUserRole = 'student'; // default fallback
-                if (tokenPayload && tokenPayload.role) {
-                    actualUserRole = tokenPayload.role;
-                }
+            const tokenPayload = parseJwt(data.access_token);
+            console.log('Token payload:', tokenPayload);
 
-                console.log('Actual user role from token:', actualUserRole);
+            let actualUserRole = 'student'; // default fallback
+            if (tokenPayload && tokenPayload.role) {
+                actualUserRole = tokenPayload.role;
+            }
 
-                // Store token and actual user role in localStorage
-                localStorage.setItem('authToken', data.access_token);
-                localStorage.setItem('userRole', actualUserRole);
-                localStorage.setItem('userEmail', email);
+            console.log('Actual user role from token:', actualUserRole);
 
-                // For demo purposes, we'll extract name from email
-                const name = email.split('@')[0];
-                localStorage.setItem('userName', name);
+            localStorage.setItem('authToken', data.access_token);
+            localStorage.setItem('userRole', actualUserRole);
+            localStorage.setItem('userEmail', email);
 
-                // Redirect based on actual user role from token
-                if (actualUserRole.toLowerCase() === 'student') {
-                    window.location.href = 'student-dashboard.html';
-                } else {
-                    window.location.href = 'teacher-dashboard.html';
-                }
-            })
-            .catch(error => {
-                console.error('Login error:', error);
-                alert('Login failed: ' + (error.message || 'Unknown error occurred'));
-                // Reset button
-                loginBtn.innerHTML = originalText;
-                loginBtn.disabled = false;
-            });
+            const name = email.split('@')[0];
+            localStorage.setItem('userName', name);
+
+            if (actualUserRole.toLowerCase() === 'student') {
+                window.location.href = 'student-dashboard.html';
+            } else {
+                window.location.href = 'teacher-dashboard.html';
+            }
+        }).catch(error => {
+            console.error('Login error:', error);
+            alert('Login failed: ' + (error.message || 'Unknown error occurred'));
+            loginBtn.innerHTML = originalText;
+            loginBtn.disabled = false;
+        });
     });
 </script>
 </body></html>

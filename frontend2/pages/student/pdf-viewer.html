@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Viewer - Student Portal</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="../../css/student/pdf-viewer.css" rel="stylesheet">
+    <style>
+        .pdf-container {
+            height: calc(100vh - 200px);
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .pdf-toolbar {
+            background: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .pdf-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .pdf-nav {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        .assignment-info {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="bg-white shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <button onclick="window.history.back()" class="text-gray-400 hover:text-gray-600">
+                        <span class="material-icons">arrow_back</span>
+                    </button>
+                    <h1 class="text-2xl font-bold text-gray-900" id="assignmentTitle">Loading PDF...</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-gray-500" id="assignmentStatus">Status: Loading...</span>
+                    <a href="/pages/student/assignments.html" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-indigo-600 bg-indigo-50 hover:bg-indigo-100">
+                        Back to Assignments
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 py-6">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <!-- Assignment Info -->
+                <div class="assignment-info" id="assignmentInfo">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h2 class="text-lg font-semibold text-gray-900" id="infoTitle">Assignment Title</h2>
+                            <p class="text-gray-600 mt-1" id="infoDescription">Assignment description will appear here.</p>
+                            <div class="flex items-center mt-2 space-x-4">
+                                <span class="text-sm text-gray-500">Subject: <span id="infoSubject">Loading...</span></span>
+                                <span class="text-sm text-gray-500">Due: <span id="infoDueDate">Loading...</span></span>
+                                <span class="text-sm text-gray-500">Difficulty: <span id="infoDifficulty">Loading...</span></span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm text-gray-500 mb-1">Mastery Level</div>
+                            <div class="text-2xl font-bold text-indigo-600" id="masteryLevel">--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PDF Viewer -->
+                <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                    <div class="pdf-toolbar">
+                        <div class="pdf-controls">
+                            <div class="pdf-nav">
+                                <button id="prevPage" class="px-3 py-1 text-sm border border-gray-300 rounded-l-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <span class="material-icons text-sm">chevron_left</span>
+                                </button>
+                                <span class="px-3 py-1 text-sm border-t border-b border-gray-300 bg-gray-50 text-gray-700 min-w-[60px] text-center" id="pageInfo">1 / 1</span>
+                                <button id="nextPage" class="px-3 py-1 text-sm border border-gray-300 rounded-r-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <span class="material-icons text-sm">chevron_right</span>
+                                </button>
+                            </div>
+                            <div class="zoom-controls ml-4">
+                                <button id="zoomOut" class="px-3 py-1 text-sm border border-gray-300 rounded-l-md bg-white text-gray-700 hover:bg-gray-50">
+                                    <span class="material-icons text-sm">zoom_out</span>
+                                </button>
+                                <span class="px-3 py-1 text-sm border-t border-b border-gray-300 bg-gray-50 text-gray-700 min-w-[60px] text-center" id="zoomLevel">100%</span>
+                                <button id="zoomIn" class="px-3 py-1 text-sm border border-gray-300 rounded-r-md bg-white text-gray-700 hover:bg-gray-50">
+                                    <span class="material-icons text-sm">zoom_in</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button id="downloadBtn" class="inline-flex items-center px-3 py-1 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                <span class="material-icons text-sm mr-1">download</span>
+                                Download
+                            </button>
+                            <button id="fullscreenBtn" class="inline-flex items-center px-3 py-1 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                <span class="material-icons text-sm mr-1">fullscreen</span>
+                                Fullscreen
+                            </button>
+                        </div>
+                    </div>
+                    <div class="pdf-container relative">
+                        <div id="loadingOverlay" class="loading-overlay">
+                            <div class="text-center">
+                                <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
+                                <p class="mt-2 text-gray-600">Loading PDF...</p>
+                            </div>
+                        </div>
+                        <canvas id="pdfCanvas" class="w-full h-full"></canvas>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="mt-6 flex justify-center space-x-4">
+                    <button id="markCompleteBtn" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                        <span class="material-icons text-sm mr-2">check_circle</span>
+                        Mark as Complete
+                    </button>
+                    <button id="startQuizBtn" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <span class="material-icons text-sm mr-2">quiz</span>
+                        Take Related Quiz
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Completion Modal -->
+    <div id="completionModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div class="flex items-center mb-4">
+                <span class="material-icons text-green-500 text-2xl mr-3">check_circle</span>
+                <h3 class="text-lg font-medium text-gray-900">Assignment Completed!</h3>
+            </div>
+            <p class="text-gray-600 mb-6">Great job! You've completed this PDF assignment. Your progress has been saved.</p>
+            <div class="flex justify-end space-x-3">
+                <button type="button" id="closeCompletionModal" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Continue
+                </button>
+                <a href="/pages/student/assignments.html" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
+                    Back to Assignments
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="../../js/utils/toast.js"></script>
+    <script src="../../js/api/studentApi.js"></script>
+    <script src="../../js/student/pdf-viewer.js" type="module"></script>
+</body>
+</html>

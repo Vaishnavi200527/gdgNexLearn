@@ -51,7 +51,7 @@ class ContinuousAssessmentService:
             # Fallback to template-based questions
             return self._generate_template_questions(concept)
     
-    def _generate_template_questions(self, concept: models.Concepts) -> List[Dict[str, Any]]:
+    def _generate_template_questions(self, concept: models.Concept) -> List[Dict[str, Any]]:
         """
         Generate template-based questions when AI generation fails.
         """

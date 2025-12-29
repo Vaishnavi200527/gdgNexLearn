@@ -8,14 +8,19 @@ from auth_utils import get_password_hash
 def seed_database():
     db: Session = database.SessionLocal()
     
-    # Check if users already exist to avoid duplicating data
-    existing_users = db.query(models.Users).count()
-    if existing_users > 0:
-        print("Database already has users, skipping seeding")
-        db.close()
-        return
+    # Always reseed for development - clear existing data first
+    print("Clearing existing data and reseeding database...")
     
-    # Clear existing data
+    # Clear existing data in correct order (respecting foreign keys)
+    db.query(models.StudentQuizzes).delete()
+    db.query(models.ClassQuizzes).delete()
+    db.query(models.QuizQuestion).delete()
+    db.query(models.Quiz).delete()
+    db.query(models.ClassProjects).delete()
+    db.query(models.Notification).delete()
+    db.query(models.ClassAssignments).delete()
+    db.query(models.ClassEnrollments).delete()
+    db.query(models.Classes).delete()
     db.query(models.TeacherInterventions).delete()
     db.query(models.StudentBadges).delete()
     db.query(models.StudentStreaks).delete()
@@ -26,9 +31,10 @@ def seed_database():
     db.query(models.Projects).delete()
     db.query(models.StudentAssignments).delete()
     db.query(models.Assignments).delete()
-    db.query(models.ConceptProgress).delete()
-    db.query(models.StudentMastery).delete()
-    db.query(models.Concepts).delete()
+    db.query(models.Attempt).delete()
+    db.query(models.Question).delete()
+    db.query(models.MasteryScores).delete()
+    db.query(models.Concept).delete()
     db.query(models.Users).delete()
     
     # Create sample users (students and teachers)
@@ -60,11 +66,11 @@ def seed_database():
     
     # Create sample concepts
     concepts = [
-        models.Concepts(name="Python Basics", description="Introduction to Python programming language"),
-        models.Concepts(name="Data Structures", description="Lists, dictionaries, sets, and tuples in Python"),
-        models.Concepts(name="Algorithms", description="Basic algorithms and complexity analysis"),
-        models.Concepts(name="Object-Oriented Programming", description="Classes, objects, inheritance, and polymorphism"),
-        models.Concepts(name="Database Design", description="Relational database design and SQL")
+        models.Concept(subject="Python", concept_name="Python Basics"),
+        models.Concept(subject="Python", concept_name="Data Structures"),
+        models.Concept(subject="Computer Science", concept_name="Algorithms"),
+        models.Concept(subject="Python", concept_name="Object-Oriented Programming"),
+        models.Concept(subject="Database", concept_name="Database Design")
     ]
     
     # Add concepts to database
@@ -78,14 +84,14 @@ def seed_database():
     
     # Create sample mastery data
     mastery_data = [
-        models.StudentMastery(student_id=students[0].id, concept_id=concepts[0].id, mastery_score=85.0),
-        models.StudentMastery(student_id=students[0].id, concept_id=concepts[1].id, mastery_score=75.0),
-        models.StudentMastery(student_id=students[1].id, concept_id=concepts[0].id, mastery_score=90.0),
-        models.StudentMastery(student_id=students[1].id, concept_id=concepts[1].id, mastery_score=60.0),
-        models.StudentMastery(student_id=students[2].id, concept_id=concepts[0].id, mastery_score=70.0),
-        models.StudentMastery(student_id=students[2].id, concept_id=concepts[1].id, mastery_score=80.0),
-        models.StudentMastery(student_id=students[3].id, concept_id=concepts[0].id, mastery_score=35.0),  # Struggling student
-        models.StudentMastery(student_id=students[4].id, concept_id=concepts[0].id, mastery_score=65.0)
+        models.MasteryScores(student_id=students[0].id, concept_id=concepts[0].id, mastery_score=85.0),
+        models.MasteryScores(student_id=students[0].id, concept_id=concepts[1].id, mastery_score=75.0),
+        models.MasteryScores(student_id=students[1].id, concept_id=concepts[0].id, mastery_score=90.0),
+        models.MasteryScores(student_id=students[1].id, concept_id=concepts[1].id, mastery_score=60.0),
+        models.MasteryScores(student_id=students[2].id, concept_id=concepts[0].id, mastery_score=70.0),
+        models.MasteryScores(student_id=students[2].id, concept_id=concepts[1].id, mastery_score=80.0),
+        models.MasteryScores(student_id=students[3].id, concept_id=concepts[0].id, mastery_score=35.0),  # Struggling student
+        models.MasteryScores(student_id=students[4].id, concept_id=concepts[0].id, mastery_score=65.0)
     ]
     
     # Add mastery data to database
@@ -226,18 +232,7 @@ def seed_database():
         db.add(badge)
     db.commit()
     
-    # Create sample concept progress
-    concept_progress = [
-        models.ConceptProgress(student_id=students[0].id, concept_id=concepts[0].id, mastery_score=85.0, level=4),
-        models.ConceptProgress(student_id=students[0].id, concept_id=concepts[1].id, mastery_score=75.0, level=3),
-        models.ConceptProgress(student_id=students[1].id, concept_id=concepts[0].id, mastery_score=90.0, level=5),
-        models.ConceptProgress(student_id=students[2].id, concept_id=concepts[0].id, mastery_score=70.0, level=3)
-    ]
-    
-    # Add concept progress to database
-    for cp in concept_progress:
-        db.add(cp)
-    db.commit()
+
     
     # Create sample teacher interventions
     interventions = [

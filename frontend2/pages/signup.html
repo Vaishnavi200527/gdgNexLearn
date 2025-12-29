@@ -109,6 +109,19 @@
 <script type="module">
     // Import API service
     import { authAPI } from '../src/services/api.js';
+
+    // Function to decode JWT token and extract user info
+    function parseJwt(token) {
+        try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(escape(window.atob(base64)));
+            return JSON.parse(jsonPayload);
+        } catch (e) {
+            console.error('Error parsing JWT:', e);
+            return null;
+        }
+    }
     
     // Signup button functionality
     document.getElementById('signup-btn').addEventListener('click', function(e) {
@@ -118,7 +131,7 @@
         const name = document.getElementById('name-input').value;
         const email = document.getElementById('email-input').value;
         const password = document.getElementById('password-input').value;
-        const role = document.getElementById('role-select').value.toUpperCase();
+        const role = document.getElementById('role-select').value.toLowerCase();
         
         // Simple validation
         if (!name || !email || !password) {
@@ -143,25 +156,53 @@
         // Make API call
         authAPI.signup(userData)
             .then(data => {
-                // After successful signup, login the user
-                return authAPI.login({ email, password });
+                // After successful signup, login the user using fetch to ensure correct Content-Type
+                const formData = new URLSearchParams();
+                formData.append('username', email);
+                formData.append('password', password);
+
+                return fetch('http://localhost:8000/auth/token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: formData
+                }).then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => { throw new Error(err.detail || 'Login after signup failed'); });
+                    }
+                    return response.json();
+                });
             })
             .then(loginData => {
+                if (!loginData || !loginData.access_token) {
+                    throw new Error('Invalid login response: missing access token');
+                }
+
+                // Parse the JWT token to get the user's actual role
+                const tokenPayload = parseJwt(loginData.access_token);
+                
+                // Extract role from token
+                let actualUserRole = 'student'; // default fallback
+                if (tokenPayload && tokenPayload.role) {
+                    actualUserRole = tokenPayload.role;
+                }
+
                 // Store token, role, and user name in localStorage
                 localStorage.setItem('authToken', loginData.access_token);
-                localStorage.setItem('userRole', role);
+                localStorage.setItem('userRole', actualUserRole);
                 localStorage.setItem('userName', name);
                 
-                // Redirect based on selected role
-                if (role === 'STUDENT') {
+                // Redirect based on actual user role from token
+                if (actualUserRole.toLowerCase() === 'student') {
                     window.location.href = 'student-dashboard.html';
                 } else {
                     window.location.href = 'teacher-dashboard.html';
                 }
             })
             .catch(error => {
-                console.error('Signup error:', error);
-                alert('Signup failed: ' + error.message);
+                console.error('Signup or Login error:', error);
+                alert('Operation failed: ' + error.message);
                 // Reset button
                 signupBtn.innerHTML = originalText;
                 signupBtn.disabled = false;

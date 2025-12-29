@@ -25,9 +25,7 @@ def clear_data():
         db.query(models.Projects).delete()
         db.query(models.StudentAssignments).delete()
         db.query(models.Assignments).delete()
-        db.query(models.ConceptProgress).delete()
-        db.query(models.StudentMastery).delete()
-        db.query(models.Concepts).delete()
+        db.query(models.Concept).delete()
         
         # Notifications
         db.query(models.Notification).delete()

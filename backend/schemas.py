@@ -639,6 +639,17 @@ class ConceptAnalyticsResponse(BaseModel):
     max_mastery: float
     student_count: int
     mastery_distribution: Dict[str, int]
-    
+
+    class Config:
+        from_attributes = True
+
+class AdaptiveHomeworkResponse(BaseModel):
+    question_id: int
+    concept_id: int
+    concept_name: str
+    question_text: str
+    difficulty: str
+    mastery_level: float
+
     class Config:
         from_attributes = True

@@ -66,15 +66,15 @@ def get_mastery(
 ):
     # Get student mastery records
     student_id = current_user.id
-    mastery_records = db.query(models.StudentMastery).filter(
-        models.StudentMastery.student_id == student_id
+    mastery_records = db.query(models.MasteryScores).filter(
+        models.MasteryScores.student_id == student_id
     ).all()
     
     results = []
     for record in mastery_records:
         results.append({
             "concept_id": record.concept_id,
-            "concept_name": record.concept.name if record.concept else "Unknown",
+            "concept_name": record.concept.concept_name if record.concept else "Unknown",
             "mastery_score": record.mastery_score,
             "level": int(record.mastery_score / 20) + 1
         })
@@ -131,31 +131,54 @@ def get_adaptive_assignments(
 ):
     # Get adaptive assignments based on student's mastery levels and class enrollment
     student_id = current_user.id
+
+    # Get student's mastery scores
+    mastery_records = db.query(models.MasteryScores).filter(
+        models.MasteryScores.student_id == student_id
+    ).all()
+
+    # Create a dictionary of concept_id -> mastery_score
+    mastery_dict = {record.concept_id: record.mastery_score for record in mastery_records}
+
     # First get classes the student is enrolled in
     enrolled_classes = db.query(models.Classes.id)\
         .join(models.ClassEnrollments)\
         .filter(models.ClassEnrollments.student_id == student_id)\
         .all()
-    
+
     class_ids = [c.id for c in enrolled_classes]
-    
+
     # Get assignments assigned to those classes
     class_assignments = db.query(models.Assignments)\
         .join(models.ClassAssignments)\
         .filter(models.ClassAssignments.class_id.in_(class_ids))\
         .all()
-    
-    # Convert to adaptive assignment response format
+
+    # Convert to adaptive assignment response format with difficulty adjustment
     adaptive_assignments = []
     for assignment in class_assignments:
+        # Get mastery score for this concept
+        mastery_score = mastery_dict.get(assignment.concept_id, 0)
+
+        # Adjust difficulty based on mastery
+        # If mastery < 60: keep original difficulty (needs practice)
+        # If mastery 60-80: increase difficulty slightly
+        # If mastery > 80: no assignment needed (mastered)
+        if mastery_score > 80:
+            continue  # Skip assignments for mastered concepts
+
+        adjusted_difficulty = assignment.difficulty_level or 1
+        if mastery_score >= 60 and mastery_score <= 80:
+            adjusted_difficulty = min(5, adjusted_difficulty + 1)  # Increase difficulty slightly
+
         adaptive_assignments.append(schemas.AdaptiveAssignmentResponse(
             assignment_id=assignment.id,
             title=assignment.title,
             description=assignment.description,
-            difficulty_level=assignment.difficulty_level or 1,
+            difficulty_level=adjusted_difficulty,
             estimated_time=30  # Default value
         ))
-    
+
     return adaptive_assignments
 
 @router.get("/assignments/{assignment_id}/info", response_model=schemas.AssignmentResponse)
@@ -372,13 +395,13 @@ async def get_assignment_status(
     ).filter(
         models.Assignments.id == assignment_id
     ).first()
-    
+
     if not assignment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Assignment not found or not assigned to student"
         )
-    
+
     return {
         **assignment[0].__dict__,
         "status": assignment[1],
@@ -386,3 +409,55 @@ async def get_assignment_status(
         "submitted_at": assignment[3],
         "due_date": assignment[4]
     }
+
+@router.get("/homework/adaptive", response_model=List[schemas.AdaptiveHomeworkResponse])
+def get_adaptive_homework(
+    db: Session = Depends(get_db),
+    current_user: models.Users = Depends(get_current_student)
+):
+    """
+    Generate adaptive homework based on student's mastery levels.
+    Returns questions from concepts where mastery is below 80%.
+    """
+    student_id = current_user.id
+
+    # Get student's mastery scores
+    mastery_records = db.query(models.MasteryScores).filter(
+        models.MasteryScores.student_id == student_id
+    ).all()
+
+    # Find concepts where mastery is below 80%
+    weak_concepts = []
+    for record in mastery_records:
+        if record.mastery_score < 80:
+            weak_concepts.append(record.concept_id)
+
+    # If no weak concepts, return empty list (student has mastered everything)
+    if not weak_concepts:
+        return []
+
+    # Get questions from weak concepts, prioritizing based on mastery level
+    # Lower mastery = higher priority
+    concept_priorities = {record.concept_id: record.mastery_score for record in mastery_records}
+    weak_concepts.sort(key=lambda x: concept_priorities.get(x, 0))  # Sort by lowest mastery first
+
+    homework_questions = []
+    questions_per_concept = 3  # Limit questions per concept
+
+    for concept_id in weak_concepts:
+        # Get questions for this concept
+        questions = db.query(models.Question).filter(
+            models.Question.concept_id == concept_id
+        ).limit(questions_per_concept).all()
+
+        for question in questions:
+            homework_questions.append({
+                "question_id": question.id,
+                "concept_id": concept_id,
+                "concept_name": question.concept.concept_name if question.concept else "Unknown",
+                "question_text": question.question_text,
+                "difficulty": question.difficulty,
+                "mastery_level": concept_priorities.get(concept_id, 0)
+            })
+
+    return homework_questions

@@ -68,7 +68,7 @@ async def process_pdf(
 
             # Check if concept already exists
             existing_concept = db.query(models.Concepts).filter(
-                models.Concepts.name.ilike(concept_name)
+                models.Concepts.concept_name.ilike(concept_name)
             ).first()
 
             if existing_concept:
@@ -77,7 +77,7 @@ async def process_pdf(
             else:
                 # Create new concept
                 new_concept = models.Concepts(
-                    name=concept_name,
+                    concept_name=concept_name,
                     description=concept_description
                 )
                 db.add(new_concept)
