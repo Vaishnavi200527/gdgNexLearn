@@ -18,7 +18,13 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against a hash"""
-    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    # bcrypt.hashpw returns bytes, but database stores it as string
+    # Need to ensure the stored hash is properly converted back to bytes
+    if isinstance(hashed_password, str):
+        hashed_bytes = hashed_password.encode('utf-8')
+    else:
+        hashed_bytes = hashed_password
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_bytes)
 
 def get_password_hash(password: str) -> str:
     """Generate password hash"""

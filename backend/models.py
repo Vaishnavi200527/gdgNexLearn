@@ -1,11 +1,12 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum, Boolean, JSON
-from sqlalchemy.orm import relationship, declarative_base
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum, Boolean, JSON, Text
+from sqlalchemy.orm import relationship
 from datetime import datetime
 from typing import Optional, Dict, Any
 import enum
 import json
 
-Base = declarative_base()
+# Import Base from database module to ensure consistency
+from database import Base
 
 class UserRole(str, enum.Enum):
     STUDENT = "student"
@@ -51,9 +52,15 @@ class Concept(Base):
     __tablename__ = "concepts"
 
     id = Column(Integer, primary_key=True, index=True)
-    subject = Column(String, nullable=True)
     concept_name = Column(String, nullable=False)
-    description = Column(String)
+    description = Column(String, nullable=False)
+    subject = Column(String, nullable=True)
+    id_slug = Column(String, unique=True, nullable=True)  # For URL-friendly references
+    prerequisite_ids = Column(String, nullable=True)  # JSON string of prerequisite concept IDs
+
+    # IRT parameters for adaptive difficulty
+    irt_difficulty = Column(Float, default=0.0)  # Difficulty parameter
+    discrimination_index = Column(Float, default=1.0)  # Discrimination parameter
     
     # Relationships
     mastery_scores = relationship("MasteryScores", back_populates="concept")
@@ -317,7 +324,11 @@ class QuizQuestion(Base):
     question_text = Column(String, nullable=False)
     options = Column(JSON, nullable=False)  # e.g., {"A": "Option 1", "B": "Option 2"}
     correct_answer = Column(String, nullable=False) # e.g., "A"
-
+    
+    # IRT parameters
+    irt_difficulty = Column(Float, default=0.0)  # Difficulty parameter
+    discrimination_index = Column(Float, default=1.0)  # Discrimination parameter
+    
     quiz = relationship('Quiz', back_populates='questions')
     concept = relationship('Concept')
 
@@ -347,3 +358,41 @@ class StudentQuizzes(Base):
     student = relationship('Users')
     quiz = relationship('Quiz')
     class_obj = relationship('Classes')
+
+class ConceptExplanations(Base):
+    __tablename__ = 'concept_explanations'
+    
+    id = Column(Integer, primary_key=True, index=True)
+    concept_id = Column(Integer, ForeignKey('concepts.id'), nullable=False)
+    title = Column(String, nullable=False)
+    definition = Column(Text, nullable=False)
+    detailed_explanation = Column(Text, nullable=False)
+    examples = Column(JSON, default=list)  # List of contextual examples
+    key_points = Column(JSON, default=list)  # Key points and sub-topics
+    prerequisites = Column(JSON, default=list)  # Prerequisites for understanding
+    step_by_step_breakdown = Column(JSON, default=list)  # Step-by-step explanations
+    related_terms = Column(JSON, default=list)  # Related terminology
+    applications = Column(JSON, default=list)  # Real-world applications
+    common_misconceptions = Column(JSON, default=list)  # Common misconceptions
+    complexity_level = Column(String, default='medium')  # easy, medium, hard
+    word_count = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    concept = relationship('Concepts', back_populates='explanations')
+
+class PDFDocuments(Base):
+    __tablename__ = 'pdf_documents'
+    
+    id = Column(Integer, primary_key=True, index=True)
+    filename = Column(String, nullable=False)
+    original_filename = Column(String, nullable=False)
+    file_size = Column(Integer, nullable=False)
+    page_count = Column(Integer, nullable=False)
+    extracted_text = Column(Text, nullable=False)
+    processed_at = Column(DateTime, default=datetime.utcnow)
+    concept_ids = Column(JSON, default=list)  # IDs of concepts extracted from this PDF
+
+# Update the Concepts model to include explanations relationship
+Concepts.explanations = relationship('ConceptExplanations', back_populates='concept', cascade='all, delete-orphan')

@@ -6,8 +6,15 @@ from datetime import datetime, timedelta
 from auth_utils import get_password_hash
 
 def seed_database():
+    # Create all tables first to ensure they exist
+    print("Creating all tables if they don't exist...")
+    from database import Base, engine
+    Base.metadata.create_all(bind=engine)
+    print("Tables created successfully.")
+    
     db: Session = database.SessionLocal()
     
+<<<<<<< HEAD
     # Always reseed for development - clear existing data first
     print("Clearing existing data and reseeding database...")
     
@@ -36,6 +43,37 @@ def seed_database():
     db.query(models.MasteryScores).delete()
     db.query(models.Concept).delete()
     db.query(models.Users).delete()
+=======
+    # Check if users already exist to avoid duplication
+    existing_users = db.query(models.Users).count()
+    if existing_users > 0:
+        print("Database already has users, skipping seeding")
+        db.close()
+        return
+    
+    # Clear existing data only if no users exist
+    try:
+        db.query(models.TeacherInterventions).delete()
+        db.query(models.StudentBadges).delete()
+        db.query(models.StudentStreaks).delete()
+        db.query(models.StudentXP).delete()
+        db.query(models.SoftSkillScores).delete()
+        db.query(models.EngagementLogs).delete()
+        db.query(models.ProjectTeams).delete()
+        db.query(models.Projects).delete()
+        db.query(models.StudentAssignments).delete()
+        db.query(models.Assignments).delete()
+        db.query(models.ConceptProgress).delete()
+        db.query(models.StudentMastery).delete()
+        db.query(models.Concepts).delete()
+        db.query(models.Users).delete()
+    except Exception as e:
+        # If tables don't exist yet, create them
+        print(f"Error clearing data (may be first run): {e}")
+        Base.metadata.create_all(bind=engine)
+        db.close()
+        db = database.SessionLocal()  # Get a new session
+>>>>>>> d1b0e9665ef58abcf16ab9b737febfe080e00a82
     
     # Create sample users (students and teachers)
     students = [
@@ -245,6 +283,17 @@ def seed_database():
     for intervention in interventions:
         db.add(intervention)
     db.commit()
+    
+    # Add the specific user for Disha Kulkarni
+    disha_user = models.Users(
+        name="Disha Kulkarni", 
+        email="dishakulkarni2005@gmail.com", 
+        password_hash=get_password_hash("abcd1234"), 
+        role="teacher"  # Using lowercase to match enum
+    )
+    db.add(disha_user)
+    db.commit()
+    db.refresh(disha_user)
     
     db.close()
     print("Database seeded successfully!")

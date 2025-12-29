@@ -47,52 +47,227 @@ bkt_model = BayesianKnowledgeTracer()
 def get_adaptive_assignments(student_id: int, db: Session) -> List[schemas.AdaptiveAssignmentResponse]:
     """
     Get adaptive assignments based on student's mastery levels using BKT model.
-    Returns empty list for students who haven't completed any assignments yet.
+    Implements deep pathways and fixes cold start problem.
     """
     # Get student's current mastery levels
     mastery_records = db.query(models.MasteryScores).filter(
         models.MasteryScores.student_id == student_id
     ).all()
     
-    # For students who haven't completed any assignments, return empty list
+    # Fix Cold Start: If no mastery records exist, return diagnostic placement assignment
     if not mastery_records:
-        return []
+        return [
+            schemas.AdaptiveAssignmentResponse(
+                assignment_id=1,
+                title="Diagnostic Assessment",
+                description="Complete this assessment to determine your current knowledge level",
+                difficulty_level=2,
+                estimated_time=20
+            )
+        ]
     
-    # For students with existing mastery records, return assignments based on lowest mastery concepts
+    # For students with existing mastery records, implement deep pathways
     assignments = []
     
     # Sort by mastery score to find weakest concepts
     sorted_mastery = sorted(mastery_records, key=lambda x: x.mastery_score)
     weakest_concept = sorted_mastery[0] if sorted_mastery else None
     
-    if weakest_concept and weakest_concept.mastery_score < 70:
-        # Focus on weak areas
-        assignments = [
-            schemas.AdaptiveAssignmentResponse(
-                assignment_id=weakest_concept.concept_id * 10 + 1,
-                title=f"Reinforcement: {weakest_concept.concept.name}",
-                description=f"Additional practice for {weakest_concept.concept.name}",
-                difficulty_level=max(1, int(weakest_concept.mastery_score / 20)),
-                estimated_time=30
+    if weakest_concept and weakest_concept.mastery_score < 50:
+        # Deep Pathways: Look up prerequisites if they exist
+        concept = db.query(models.Concepts).filter(models.Concepts.id == weakest_concept.concept_id).first()
+        if concept and concept.prerequisite_ids:
+            try:
+                import json
+                prereq_ids = json.loads(concept.prerequisite_ids)
+                if prereq_ids:
+                     # Find the first unmastered prerequisite
+                     for prereq_id in prereq_ids:
+                         prereq_mastery = db.query(models.StudentMastery).filter(
+                             models.StudentMastery.student_id == student_id,
+                             models.StudentMastery.concept_id == prereq_id
+                         ).first()
+                         
+                         if not prereq_mastery or prereq_mastery.mastery_score < 70:
+                             prereq_concept = db.query(models.Concepts).filter(models.Concepts.id == prereq_id).first()
+                             if prereq_concept:
+                                 assignments.append(
+                                     schemas.AdaptiveAssignmentResponse(
+                                         assignment_id=prereq_concept.id * 10 + 1,
+                                         title=f"Foundation: {prereq_concept.name}",
+                                         description=f"Prerequisite for {weakest_concept.concept.name}",
+                                         difficulty_level=max(1, int(weakest_concept.mastery_score / 20)),
+                                         estimated_time=30
+                                     )
+                                 )
+                                 break  # Assign only the immediate prerequisite
+                     else:
+                         # If all prerequisites are mastered, assign the weak concept
+                         assignments.append(
+                             schemas.AdaptiveAssignmentResponse(
+                                 assignment_id=weakest_concept.concept_id * 10 + 1,
+                                 title=f"Reinforcement: {weakest_concept.concept.name}",
+                                 description=f"Additional practice for {weakest_concept.concept.name}",
+                                 difficulty_level=max(1, int(weakest_concept.mastery_score / 20)),
+                                 estimated_time=30
+                             )
+                         )
+            except json.JSONDecodeError:
+                 # Fallback if prerequisite_ids is not valid JSON
+                 assignments.append(
+                     schemas.AdaptiveAssignmentResponse(
+                         assignment_id=weakest_concept.concept_id * 10 + 1,
+                         title=f"Reinforcement: {weakest_concept.concept.name}",
+                         description=f"Additional practice for {weakest_concept.concept.name}",
+                         difficulty_level=max(1, int(weakest_concept.mastery_score / 20)),
+                         estimated_time=30
+                     )
+                 )
+        else:
+            # No prerequisites, assign the weak concept directly
+            assignments.append(
+                schemas.AdaptiveAssignmentResponse(
+                    assignment_id=weakest_concept.concept_id * 10 + 1,
+                    title=f"Reinforcement: {weakest_concept.concept.name}",
+                    description=f"Additional practice for {weakest_concept.concept.name}",
+                    difficulty_level=max(1, int(weakest_concept.mastery_score / 20)),
+                    estimated_time=30
+                )
             )
-        ]
+    elif weakest_concept and weakest_concept.mastery_score >= 90:
+        # Student mastered, advance to next level
+        # Find concepts that this concept is a prerequisite for
+        all_concepts = db.query(models.Concepts).all()
+        next_concepts = []
+        for concept in all_concepts:
+            if concept.prerequisite_ids:
+                 try:
+                     import json
+                     prereq_ids = json.loads(concept.prerequisite_ids)
+                     if weakest_concept.concept_id in prereq_ids:
+                         # Check if this next concept is already mastered
+                         next_mastery = db.query(models.StudentMastery).filter(
+                             models.StudentMastery.student_id == student_id,
+                             models.StudentMastery.concept_id == concept.id
+                         ).first()
+                         if not next_mastery or next_mastery.mastery_score < 90:
+                             next_concepts.append(concept)
+                             break
+                 except json.JSONDecodeError:
+                     continue
+        
+        if next_concepts:
+            next_concept = next_concepts[0]
+            assignments.append(
+                schemas.AdaptiveAssignmentResponse(
+                    assignment_id=next_concept.id * 10 + 1,
+                    title=f"Advanced: {next_concept.name}",
+                    description=f"Next concept after {weakest_concept.concept.name}",
+                    difficulty_level=4,
+                    estimated_time=45
+                )
+            )
+        else:
+            # No next concept found, assign a challenge
+            assignments.append(
+                schemas.AdaptiveAssignmentResponse(
+                    assignment_id=2,
+                    title="Advanced Challenge",
+                    description="Apply your knowledge in complex contexts",
+                    difficulty_level=4,
+                    estimated_time=60
+                )
+            )
     else:
-        # Advance to next level
-        assignments = [
+        # Student is progressing normally
+        assignments.append(
             schemas.AdaptiveAssignmentResponse(
                 assignment_id=2,
-                title="Intermediate Challenge",
-                description="Apply your knowledge in new contexts",
+                title="Continued Learning",
+                description="Continue building your knowledge",
                 difficulty_level=3,
                 estimated_time=45
             )
-        ]
+        )
     
     return assignments
 
-def update_mastery_score(student_id: int, concept_id: int, score: float, db: Session):
+def update_mastery_score(student_id: int, concept_id: int, score: float, db: Session, question_difficulty: float = None):
     """
-    Update student's mastery score for a concept after assignment submission using BKT.
+    Update student's mastery score for a concept after assignment submission using IRT-weighted BKT.
+    """
+    # Get current mastery record
+    mastery_record = db.query(models.StudentMastery).filter(
+        models.StudentMastery.student_id == student_id,
+        models.StudentMastery.concept_id == concept_id
+    ).first()
+    
+    # Convert percentage score to correctness (1 if >= 70%, 0 otherwise)
+    correctness = 1 if score >= 70 else 0
+    
+    # Use provided question difficulty for IRT weighting, or default to 0.5 (medium)
+    irt_difficulty = question_difficulty if question_difficulty is not None else 0.5
+    
+    if mastery_record:
+        # Update existing mastery using BKT with IRT weighting
+        prev_mastery = mastery_record.mastery_score / 100.0
+        
+        # Adjust the mastery update based on question difficulty
+        # Harder questions should have more impact when answered correctly
+        # Easier questions should have more impact when answered incorrectly
+        if correctness:
+            # Correct answer on a difficult question has more impact
+            weighted_correctness = min(1.0, prev_mastery + (1 - prev_mastery) * (1 + irt_difficulty * 0.5))
+            new_mastery = bkt_model.update_mastery(prev_mastery, 1)
+            # Apply IRT weighting to the mastery update
+            new_mastery = prev_mastery + (new_mastery - prev_mastery) * (1 + irt_difficulty * 0.3)
+        else:
+            # Incorrect answer on an easy question has more impact
+            weighted_correctness = max(0.0, prev_mastery - prev_mastery * (1 - irt_difficulty) * 0.5)
+            new_mastery = bkt_model.update_mastery(prev_mastery, 0)
+            # Apply IRT weighting to the mastery update
+            new_mastery = prev_mastery + (new_mastery - prev_mastery) * (1 + (1 - irt_difficulty) * 0.3)
+        
+        # Ensure mastery stays within bounds
+        new_mastery = max(0.0, min(1.0, new_mastery))
+        
+        mastery_record.mastery_score = new_mastery * 100
+    else:
+        # Create new mastery record
+        initial_mastery = 0.5 if correctness else 0.2
+        new_mastery = bkt_model.update_mastery(initial_mastery, correctness)
+        
+        # Apply IRT weighting for new students as well
+        if question_difficulty is not None:
+            if correctness:
+                new_mastery = min(1.0, initial_mastery + (1 - initial_mastery) * (1 + question_difficulty * 0.3))
+            else:
+                new_mastery = max(0.0, initial_mastery - initial_mastery * (1 - question_difficulty) * 0.3)
+        
+        # Ensure mastery stays within bounds
+        new_mastery = max(0.0, min(1.0, new_mastery))
+        
+        mastery_record = models.StudentMastery(
+            student_id=student_id,
+            concept_id=concept_id,
+            mastery_score=new_mastery * 100
+        )
+        db.add(mastery_record)
+    
+    db.commit()
+    print(f"Updated mastery for student {student_id} in concept {concept_id} to {new_mastery * 100:.2f}% with IRT difficulty {irt_difficulty}")
+
+def update_mastery_score_with_irt(student_id: int, concept_id: int, score: float, question_irt_difficulty: float, discrimination_index: float, db: Session):
+    """
+    Update student's mastery score using full IRT model with difficulty and discrimination parameters.
+    
+    Args:
+        student_id: ID of the student
+        concept_id: ID of the concept
+        score: Score received (0-100)
+        question_irt_difficulty: IRT difficulty parameter for the question (0.0-1.0)
+        discrimination_index: Discrimination parameter for the question (0.5-1.5)
+        db: Database session
     """
     # Get current mastery record
     mastery_record = db.query(models.MasteryScores).filter(
@@ -104,23 +279,58 @@ def update_mastery_score(student_id: int, concept_id: int, score: float, db: Ses
     correctness = 1 if score >= 70 else 0
     
     if mastery_record:
-        # Update existing mastery using BKT
-        prev_mastery = mastery_record.mastery_score / 100.0
-        new_mastery = bkt_model.update_mastery(prev_mastery, correctness)
-        mastery_record.mastery_score = new_mastery * 100
+        # Get current mastery as theta (ability parameter)
+        current_theta = mastery_record.mastery_score / 100.0
+        
+        # IRT 2-parameter logistic model: P(theta) = 1 / (1 + exp(-D * a * (theta - b)))
+        # Where: a = discrimination, b = difficulty, D = scaling constant (1.7)
+        D = 1.7  # Scaling constant
+        a = discrimination_index  # Discrimination parameter
+        b = question_irt_difficulty  # Difficulty parameter
+        
+        # Calculate probability of correct response using IRT
+        import math
+        prob_correct = 1 / (1 + math.exp(-D * a * (current_theta - b)))
+        
+        # Update mastery based on response and IRT parameters
+        if correctness:
+            # If correct answer, increase mastery more if question was hard
+            adjustment = (1 - prob_correct) * 0.1 * a
+            new_theta = min(1.0, current_theta + adjustment)
+        else:
+            # If incorrect answer, decrease mastery more if question was easy
+            adjustment = prob_correct * 0.1 * a
+            new_theta = max(0.0, current_theta - adjustment)
+        
+        mastery_record.mastery_score = new_theta * 100
     else:
         # Create new mastery record
-        initial_mastery = 0.5 if correctness else 0.2
-        new_mastery = bkt_model.update_mastery(initial_mastery, correctness)
+        initial_theta = 0.5 if correctness else 0.2
+        
+        # Apply IRT-based adjustment for new students
+        D = 1.7
+        a = discrimination_index
+        b = question_irt_difficulty
+        
+        import math
+        prob_correct = 1 / (1 + math.exp(-D * a * (initial_theta - b)))
+        
+        if correctness:
+            adjustment = (1 - prob_correct) * 0.1 * a
+            new_theta = min(1.0, initial_theta + adjustment)
+        else:
+            adjustment = prob_correct * 0.1 * a
+            new_theta = max(0.0, initial_theta - adjustment)
+        
         mastery_record = models.StudentMastery(
             student_id=student_id,
             concept_id=concept_id,
-            mastery_score=new_mastery * 100
+            mastery_score=new_theta * 100
         )
         db.add(mastery_record)
     
     db.commit()
-    print(f"Updated mastery for student {student_id} in concept {concept_id} to {new_mastery * 100:.2f}%")
+    print(f"IRT-Updated mastery for student {student_id} in concept {concept_id} to {new_theta * 100:.2f}% with IRT difficulty {question_irt_difficulty} and discrimination {discrimination_index}")
 
 def recommend_learning_path(student_id: int, db: Session) -> List[dict]:
     """

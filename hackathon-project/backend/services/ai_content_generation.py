@@ -147,8 +147,8 @@ async def call_gemini_api(prompt: str, api_key: str = None) -> dict:
         # Create the model
         model = genai.GenerativeModel(model_name)
         
-        # Generate content
-        response = await model.generate_content_async(prompt)
+        # Generate content - using synchronous call instead of async to avoid potential issues
+        response = model.generate_content(prompt)
         
         # Try to parse the JSON response
         import json
@@ -443,8 +443,8 @@ async def generate_quiz_questions(topic: str, num_questions: int = 5, difficulty
             }}
         ]"""
         
-        # Generate content
-        response = await model.generate_content_async(prompt)
+        # Generate content - using synchronous call instead of async to avoid potential issues
+        response = model.generate_content(prompt)
         
         # Parse response
         try:

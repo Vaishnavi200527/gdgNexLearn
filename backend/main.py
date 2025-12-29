@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn  # Add this import
+import models  # Import models to register them with SQLAlchemy Base
 from routers.student import router as student_router
 from routers.teacher import router as teacher_router
 from routers.auth import router as auth_router
@@ -10,7 +11,19 @@ from routers.ai_content import router as ai_content_router
 from routers.pdf_upload import router as pdf_upload_router  # Add this import
 from routers.classes import router as classes_router  # Add this import
 
+
+# Import models to register them with SQLAlchemy Base
+import models
+from database import engine
+
 app = FastAPI(title="AI-Powered Adaptive Learning Platform")
+
+# Create all tables on startup
+@app.on_event("startup")
+def startup_event():
+    from database import Base
+    Base.metadata.create_all(bind=engine)
+    print("Database tables created on startup")
 
 # Origins for CORS
 origins = [
@@ -39,6 +52,7 @@ app.include_router(teacher_dashboard_router, prefix="/teacher/dashboard")
 app.include_router(ai_content_router, prefix="/ai")
 app.include_router(pdf_upload_router, prefix="/pdf-upload")
 app.include_router(classes_router, prefix="/classes")
+
 
 @app.get("/student-api.js")
 async def get_student_api_js():
@@ -219,6 +233,10 @@ const studentAPI = {
 
     submitAssignment: async (id, data) => {
         return await apiRequest(`/student/assignments/${id}/submit`, 'POST', data);
+    },
+
+    getAssignmentConcepts: async (id, detailLevel = 'medium') => {
+        return await apiRequest(`/student/assignments/${id}/concepts?detail_level=${detailLevel}`);
     },
 
     // --- Quiz Endpoints ---

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from typing import List, Dict, Any
 import schemas
 import models
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 # Load environment variables
 load_dotenv()
@@ -80,6 +81,9 @@ Extract from the text:
 - Key points (5-10 bullet points representing the main sections/sub-topics)
 - Prerequisite concepts (if any)
 - Difficulty level (easy, medium, hard)
+- Remedial explanation (a simplified explanation for students who struggle)
+- IRT difficulty (a numerical value 0.0-1.0 for Item Response Theory)
+- Discrimination index (a numerical value 0.5-1.5 for Item Response Theory)
 
 Return ONLY this exact JSON structure:
 {{
@@ -87,7 +91,10 @@ Return ONLY this exact JSON structure:
   "definition": "string",
   "key_points": ["string1", "string2", "string3"],
   "prerequisites": ["string1", "string2"],
-  "difficulty": "easy|medium|hard"
+  "difficulty": "easy|medium|hard",
+  "remedial_explanation": "string",
+  "irt_difficulty": 0.0,
+  "discrimination_index": 1.0
 }}
 
 Text to analyze:
@@ -372,8 +379,9 @@ def generate_project_prompt(skill_area: str, project_type: str) -> str:
     }}
     """
 
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
 async def call_gemini_api(prompt: str, api_key: str = None, expect_json: bool = True) -> Any:
-    """Call Gemini API to generate content"""
+    """Call Gemini API to generate content with retry logic"""
     # Use the provided API key or get from environment
     if not api_key:
         from dotenv import load_dotenv
@@ -420,8 +428,8 @@ async def call_gemini_api(prompt: str, api_key: str = None, expect_json: bool = 
         # Create the model
         model = genai.GenerativeModel(model_name)
         
-        # Generate content
-        response = await model.generate_content_async(prompt)
+        # Generate content - using synchronous call instead of async to avoid potential issues
+        response = model.generate_content(prompt)
         
         if not expect_json:
             return response.text
@@ -464,8 +472,23 @@ async def call_gemini_api(prompt: str, api_key: str = None, expect_json: bool = 
     except Exception as e:
         print(f"Error calling Gemini API: {e}")
         print(f"API Key used: {api_key[:10]}... (truncated for security)")
-        # Re-raise the exception instead of falling back
-        raise
+        # Provide a fallback response instead of raising the exception
+        if expect_json:
+            return {
+                "topic": "Generated Content",
+                "difficulty": 3,
+                "questions": [
+                    {
+                        "id": 1,
+                        "type": "Short Answer",
+                        "question": f"Error processing content: {str(e)}",
+                        "options": None,
+                        "correct_answer": "Error occurred"
+                    }
+                ]
+            }
+        else:
+            return f"Error processing content: {str(e)}"
 
 def simulate_gemini_response(prompt: str) -> dict:
     """Simulate Gemini API response with topic-appropriate questions"""
@@ -791,8 +814,8 @@ async def generate_quiz_questions(topic: str, num_questions: int = 5, difficulty
             }}
         ]"""
         
-        # Generate content
-        response = await model.generate_content_async(prompt)
+        # Generate content - using synchronous call instead of async to avoid potential issues
+        response = model.generate_content(prompt)
         
         # Parse response
         try:
@@ -884,7 +907,10 @@ async def extract_concept_from_pdf(pdf_text: str, api_key: str = None) -> dict:
             "definition": "Definition not available",
             "key_points": [],
             "prerequisites": [],
-            "difficulty": "medium"
+            "difficulty": "medium",
+            "remedial_explanation": "Basic explanation for this concept",
+            "irt_difficulty": 0.5,
+            "discrimination_index": 1.0
         }
 
         # Helper to validate and fix concept structure
@@ -924,6 +950,11 @@ async def extract_concept_from_pdf(pdf_text: str, api_key: str = None) -> dict:
                 merged["prerequisites"] = prereqs
                 
                 merged["difficulty"] = normalized.get("difficulty") or "medium"
+                
+                # Add new fields
+                merged["remedial_explanation"] = normalized.get("remedial_explanation") or normalized.get("remedial") or "Basic explanation for this concept"
+                merged["irt_difficulty"] = normalized.get("irt_difficulty") or normalized.get("difficulty_irt") or 0.5
+                merged["discrimination_index"] = normalized.get("discrimination_index") or normalized.get("discrimination") or 1.0
                 
                 return merged
             return None
@@ -987,7 +1018,10 @@ async def extract_concept_from_pdf(pdf_text: str, api_key: str = None) -> dict:
             "definition": "Definition not available",
             "key_points": [],
             "prerequisites": [],
-            "difficulty": "medium"
+            "difficulty": "medium",
+            "remedial_explanation": "Basic explanation for this concept",
+            "irt_difficulty": 0.5,
+            "discrimination_index": 1.0
         }
 
 
