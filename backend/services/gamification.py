@@ -2,6 +2,28 @@ from sqlalchemy.orm import Session
 from typing import List
 import schemas
 import models
+from datetime import datetime
+
+def award_xp(student_id: int, amount: int, db: Session):
+    """
+    Award XP to a student and update their record.
+    """
+    xp_record = db.query(models.StudentXP).filter(
+        models.StudentXP.student_id == student_id
+    ).first()
+    
+    if xp_record:
+        xp_record.total_xp += amount
+        xp_record.weekly_xp += amount
+        xp_record.last_updated = datetime.utcnow()
+    else:
+        xp_record = models.StudentXP(
+            student_id=student_id,
+            total_xp=amount,
+            weekly_xp=amount
+        )
+        db.add(xp_record)
+    print(f"Awarded {amount} XP to student {student_id}")
 
 def update_after_submission(student_id: int, assignment_id: int, db: Session):
     """

@@ -1,36 +1,20 @@
-import sqlite3
+from database import SessionLocal
+from models import Assignments, Concepts, StudentAssignments
 
-def check_database():
-    try:
-        conn = sqlite3.connect('learning.db')
-        cursor = conn.cursor()
-        
-        # Check all tables
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-        tables = cursor.fetchall()
-        print("Tables in database:", tables)
-        
-        # Check if users table exists and has data
-        if ('users',) in tables:
-            cursor.execute("SELECT COUNT(*) FROM users;")
-            user_count = cursor.fetchone()[0]
-            print(f"Users table exists with {user_count} records")
-            
-            # Show user columns
-            cursor.execute("PRAGMA table_info(users);")
-            columns = cursor.fetchall()
-            print("Users table columns:", columns)
-            
-            # Check for the specific user
-            cursor.execute("SELECT id, email, name, role FROM users WHERE email='dishakulkarni2005@gmail.com';")
-            user = cursor.fetchone()
-            print("Disha user record:", user)
-        else:
-            print("Users table does not exist")
-        
-        conn.close()
-    except Exception as e:
-        print(f"Error checking database: {e}")
+db = SessionLocal()
+assignments = db.query(Assignments).all()
+print('Assignments:')
+for a in assignments:
+    print(f'ID: {a.id}, Title: {a.title}, Concept ID: {a.concept_id}, Content URL: {a.content_url}')
 
-if __name__ == "__main__":
-    check_database()
+print('\nConcepts:')
+concepts = db.query(Concepts).all()
+for c in concepts:
+    print(f'ID: {c.id}, Name: {c.name}')
+
+print('\nStudent Assignments:')
+student_assignments = db.query(StudentAssignments).all()
+for sa in student_assignments:
+    print(f'Student ID: {sa.student_id}, Assignment ID: {sa.assignment_id}, Status: {sa.status}')
+
+db.close()

@@ -43,7 +43,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
         )
     
     # Create access token
-    access_token_expires = timedelta(minutes=auth_utils.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = timedelta(minutes=1440) # 24 hours for development
     
     # Handle role serialization (Enum vs String)
     role_value = user.role.value if hasattr(user.role, "value") else user.role
