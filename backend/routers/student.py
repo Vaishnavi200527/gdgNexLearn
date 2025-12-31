@@ -125,7 +125,6 @@ async def generate_ai_explanation(concept_name: str, pdf_text: str, mastery_scor
             return json.loads(response)
         return response
     except Exception as e:
-        print(f"Error generating AI explanation: {e}")
         # Fallback to a simpler, non-AI response if the API call fails
         return {
             "title": f"Understanding {concept_name}",
@@ -215,11 +214,9 @@ async def generate_ai_quiz(concept_name: str, pdf_text: str, mastery_score: int,
                 pass # Fall through to the fallback if parsing fails
 
         # Fallback for unexpected structure
-        print(f"Warning: AI quiz generation returned unexpected format: {type(response)}. Falling back to mock questions.")
         raise TypeError("Unexpected response format from AI")
 
     except Exception as e:
-        print(f"Error generating AI quiz, falling back to mock questions: {e}")
         # Fallback to mock questions if the API call fails
         questions = []
         for i in range(question_count):
@@ -285,7 +282,6 @@ def get_mastery(
 ):
     # Get student mastery records
     student_id = current_user.id
-    print(f"Fetching mastery records for student {student_id}")
     
     # Eager load the concept relationship to avoid N+1 queries
     mastery_records = db.query(models.StudentMastery)\
@@ -293,7 +289,6 @@ def get_mastery(
         .filter(models.StudentMastery.student_id == student_id)\
         .all()
     
-    print(f"Found {len(mastery_records)} mastery records for student {student_id}")
     
     results = []
     for record in mastery_records:
@@ -303,11 +298,7 @@ def get_mastery(
             "mastery_score": float(record.mastery_score),  # Ensure it's a float
             "level": int(record.mastery_score / 20) + 1
         }
-        print(f"Mastery record: {result}")
         results.append(result)
-    
-    if not results:
-        print("No mastery records found. This might be the first time this student has taken any quizzes.")
     
     return results
 
@@ -771,13 +762,8 @@ async def submit_quiz_answers(
 ):
     """
     Submit quiz answers and calculate score.
-    NOTE: This implementation trusts the client to send the original questions
-    along with the answers. In a production environment, this is insecure.
-    A better approach would be to cache the generated quiz on the backend
-    and retrieve it upon submission.
     """
     student_id = current_user.id
-    print(f"Processing quiz submission for student {student_id}, assignment {assignment_id}")
     
     try:
         # Extract data from submission
@@ -786,7 +772,6 @@ async def submit_quiz_answers(
 
         if not questions or not user_answers:
             error_msg = "Invalid submission format. 'questions' and 'answers' are required."
-            print(error_msg)
             raise HTTPException(status_code=400, detail=error_msg)
 
         # Check if assignment exists and is assigned to student
@@ -797,7 +782,6 @@ async def submit_quiz_answers(
         
         if not student_assignment:
             error_msg = f"Assignment {assignment_id} not found or not assigned to student {student_id}"
-            print(error_msg)
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=error_msg
@@ -817,14 +801,12 @@ async def submit_quiz_answers(
                     correct_answers += 1
 
         score = int((correct_answers / total_questions) * 100) if total_questions > 0 else 0
-        print(f"Quiz score for this attempt: {score}% ({correct_answers}/{total_questions} correct)")
 
         # Check if this quiz has already been submitted and graded.
         # Only the first attempt updates the score and mastery.
         is_first_attempt = student_assignment.score is None
 
         if not is_first_attempt:
-            print(f"Re-attempt on assignment {assignment_id} by student {student_id}. Score will not be updated.")
             return {
                 "assignment_id": assignment_id,
                 "score": score,
@@ -841,7 +823,6 @@ async def submit_quiz_answers(
         
         if not assignment:
             error_msg = f"Assignment {assignment_id} not found in database"
-            print(error_msg)
             raise HTTPException(status_code=404, detail=error_msg)
 
         # Update the student's assignment record with the score and status
@@ -851,10 +832,8 @@ async def submit_quiz_answers(
 
         # Update student mastery score based on this quiz performance
         if not assignment.concept_id:
-            print(f"Warning: Assignment {assignment_id} has no concept_id, skipping mastery update")
+            pass
         else:
-            print(f"Updating mastery for student {student_id}, concept {assignment.concept_id} with score {score}")
-            
             # Get or create the mastery record
             mastery_record = db.query(models.StudentMastery).filter(
                 models.StudentMastery.student_id == student_id,
@@ -866,7 +845,6 @@ async def submit_quiz_answers(
                 old_score = mastery_record.mastery_score
                 new_score = (old_score * 0.4) + (score * 0.6)  # 60% weight to new score
                 mastery_record.mastery_score = min(100, new_score)
-                print(f"Updated existing mastery record: {old_score} -> {mastery_record.mastery_score}")
             else:
                 # Create a new mastery record with the current quiz score
                 new_mastery = models.StudentMastery(
@@ -875,7 +853,6 @@ async def submit_quiz_answers(
                     mastery_score=float(score)
                 )
                 db.add(new_mastery)
-                print(f"Created new mastery record with score: {score}")
 
         # Log engagement for the submission
         engagement_log = models.EngagementLogs(
@@ -895,11 +872,9 @@ async def submit_quiz_answers(
         # Award XP for completing the quiz (50-100 XP based on score)
         xp_earned = 50 + int(score / 2)
         gamification.award_xp(student_id, xp_earned, db)
-        print(f"Awarded {xp_earned} XP to student {student_id}")
 
         # Commit all changes to the database
         db.commit()
-        print("Successfully committed quiz submission and mastery updates")
 
         return {
             "assignment_id": assignment_id,
@@ -914,7 +889,6 @@ async def submit_quiz_answers(
     except Exception as e:
         db.rollback()
         error_msg = f"Error processing quiz submission: {str(e)}"
-        print(error_msg)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An error occurred while processing your submission. Please try again."
