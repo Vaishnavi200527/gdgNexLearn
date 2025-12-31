@@ -43,11 +43,7 @@
 <header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-primary/20 px-4 sm:px-10 py-3">
 <div class="flex items-center gap-8">
 <div class="flex items-center gap-4 text-white">
-<div class="size-4 text-primary">
-<svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-<path d="M42.4379 44C42.4379 44 36.0744 33.9038 41.1692 24C46.8624 12.9336 42.2078 4 42.2078 4L7.01134 4C7.01134 4 11.6577 12.932 5.96912 23.9969C0.876273 33.9029 7.27094 44 7.27094 44L42.4379 44Z" fill="currentColor"></path>
-</svg>
-</div>
+<img src="../assets/logo.png" alt="AMEP Logo" class="h-8 w-8 text-primary" />
 <h2 class="text-white text-lg font-bold leading-tight tracking-[-0.015em]">AMEP</h2>
 </div>
 <div class="hidden md:flex items-center gap-9">
@@ -101,6 +97,50 @@
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="classes-container">
 <div class="text-center py-8 text-[#9cb2ba]">Loading classes...</div>
 </div>
+</div>
+
+<!-- Create Project Form (placed below Classes list) -->
+<div id="create-project-section" class="mt-8">
+    <div class="flex items-center justify-between">
+        <h2 class="text-white text-[22px] font-bold leading-tight tracking-[-0.015em]">Projects</h2>
+        <button id="create-project-btn" class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 bg-primary text-background-dark text-sm font-bold leading-normal tracking-[0.015em] hover:opacity-90 transition-opacity shadow-[0_0_15px_rgba(13,185,242,0.5)]">
+            <span class="truncate">Create Project</span>
+        </button>
+    </div>
+
+    <!-- Create Project Form (Hidden by default) -->
+    <div id="create-project-form" class="hidden flex-col gap-6 p-6 rounded-xl bg-[#283539] mt-6">
+        <div class="flex flex-col gap-2">
+            <label class="text-white text-sm font-medium leading-normal">Project Title</label>
+            <input type="text" id="project-title" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-[#9cb2ba]/30 bg-[#101e22] h-12 px-4 text-base font-normal leading-normal" placeholder="Enter project title">
+        </div>
+        <div class="flex flex-col gap-2">
+            <label class="text-white text-sm font-medium leading-normal">Description</label>
+            <textarea id="project-description" class="form-textarea flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-[#9cb2ba]/30 bg-[#101e22] h-24 px-4 py-3 text-base font-normal leading-normal" placeholder="Enter project description"></textarea>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex flex-col gap-2">
+                <label class="text-white text-sm font-medium leading-normal">Skill Area (optional)</label>
+                <input type="text" id="project-skill-area" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-[#9cb2ba]/30 bg-[#101e22] h-12 px-4 text-base font-normal leading-normal" placeholder="e.g., Web Dev, Data Analysis">
+            </div>
+            <div class="flex flex-col gap-2">
+                <label class="text-white text-sm font-medium leading-normal">Duration (hours)</label>
+                <input type="number" id="project-duration" min="1" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-[#9cb2ba]/30 bg-[#101e22] h-12 px-4 text-base font-normal leading-normal" placeholder="e.g., 20">
+            </div>
+        </div>
+        <div class="flex flex-col gap-2">
+            <label class="text-white text-sm font-medium leading-normal">Team Size</label>
+            <input type="number" id="project-team-size" min="1" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-[#9cb2ba]/30 bg-[#101e22] h-12 px-4 text-base font-normal leading-normal" placeholder="e.g., 3">
+        </div>
+        <button id="save-project-btn" class="flex min-w-[120px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-background-dark text-sm font-bold leading-normal tracking-[0.015em] hover:opacity-90 transition-opacity">
+            <span class="truncate">Save Project</span>
+        </button>
+    </div>
+
+    <!-- Projects List -->
+    <div id="projects-container" class="mt-6">
+        <!-- Projects will be listed here after creation or via API call -->
+    </div>
 </div>
 
 <!-- Enroll Students Section -->
@@ -274,7 +314,108 @@
             classSelect.appendChild(option);
         });
     }
-    
+
+    // --- Project creation UI handlers ---
+    const createProjectBtn = document.getElementById('create-project-btn');
+    const createProjectForm = document.getElementById('create-project-form');
+    const saveProjectBtn = document.getElementById('save-project-btn');
+    const projectsContainer = document.getElementById('projects-container');
+
+    // Toggle project form visibility
+    createProjectBtn.addEventListener('click', () => {
+        createProjectForm.classList.toggle('hidden');
+    });
+
+    // Save new project
+    saveProjectBtn.addEventListener('click', async () => {
+        const title = document.getElementById('project-title').value.trim();
+        const description = document.getElementById('project-description').value.trim();
+        const skillArea = document.getElementById('project-skill-area').value.trim();
+        const duration = parseInt(document.getElementById('project-duration').value) || null;
+        const teamSize = parseInt(document.getElementById('project-team-size').value) || null;
+
+        if (!title) {
+            alert('Please enter a project title');
+            return;
+        }
+
+        try {
+            // Build project payload; backend will set teacher_id
+            const projectData = {
+                title,
+                description,
+                start_date: new Date().toISOString(),
+                end_date: null
+            };
+
+            // Attach optional fields in a non-breaking way (backend ignores unknown fields)
+            if (skillArea) projectData.skill_area = skillArea;
+            if (duration) projectData.duration_hours = duration;
+            if (teamSize) projectData.team_size = teamSize;
+
+            const created = await teacherAPI.createProjects(projectData);
+            alert('Project created successfully!');
+
+            // Reset form
+            document.getElementById('project-title').value = '';
+            document.getElementById('project-description').value = '';
+            document.getElementById('project-skill-area').value = '';
+            document.getElementById('project-duration').value = '';
+            document.getElementById('project-team-size').value = '';
+            createProjectForm.classList.add('hidden');
+
+            // Append to projects container for immediate feedback
+            appendProjectCard(created);
+        } catch (error) {
+            console.error('Error creating project:', error);
+            alert('Failed to create project: ' + (error.message || 'Unknown error occurred'));
+        }
+    });
+
+    function appendProjectCard(project) {
+        if (!project) return;
+        const card = document.createElement('div');
+        card.className = 'flex flex-col gap-4 rounded-xl p-6 bg-[#283539] border border-primary/30 hover:border-primary/60 transition-colors';
+        card.innerHTML = `
+            <div class="flex items-center gap-3">
+                <div class="flex size-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <span class="material-symbols-outlined text-2xl">work</span>
+                </div>
+                <div class="flex flex-col">
+                    <p class="text-white font-bold text-lg">${project.title}</p>
+                    <p class="text-[#9cb2ba] text-sm">${project.description || ''}</p>
+                </div>
+            </div>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[#9cb2ba]">calendar_today</span>
+                    <span class="text-[#9cb2ba] text-sm">${project.start_date ? new Date(project.start_date).toLocaleDateString() : ''}</span>
+                </div>
+                <button class="text-primary text-sm font-bold hover:underline assign-project-btn" data-project-id="${project.id}">Assign to class</button>
+            </div>
+        `;
+        projectsContainer.prepend(card);
+    }
+
+    // Event delegation for assigning projects to the selected class
+    projectsContainer.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('assign-project-btn')) {
+            const projectId = parseInt(e.target.getAttribute('data-project-id'));
+            const classId = parseInt(classSelect.value);
+            if (!classId) {
+                alert('Select a class from the enroll section to assign this project to.');
+                return;
+            }
+            try {
+                await teacherAPI.assignProjectToClass(classId, { project_id: projectId });
+                alert('Project assigned to class!');
+            } catch (err) {
+                console.error('Error assigning project:', err);
+                alert('Failed to assign project: ' + (err.message || err));
+            }
+        }
+    });
+
     // View class details
     window.viewClassDetails = function(classId) {
         // Navigate to class details page

@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AMEP - Create New Project</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+    tailwind.config = {
+        darkMode: "class",
+        theme: {
+            extend: {
+                colors: {
+                    "primary": "#0df2df",
+                    "background-light": "#f5f8f8",
+                    "background-dark": "#102221",
+                },
+                fontFamily: {
+                    "display": ["Lexend", "sans-serif"]
+                },
+                borderRadius: {
+                    "DEFAULT": "0.5rem",
+                    "lg": "1rem",
+                    "xl": "1.5rem",
+                    "full": "9999px"
+                },
+            },
+        },
+    }
+</script>
+</head>
+<body class="font-display bg-[#0A0F1E] text-white">
+<div class="min-h-screen bg-[#0A0F1E]">
+    <!-- Header -->
+    <header class="border-b border-indigo-500/20 backdrop-blur-sm bg-[#0F172A]/30 w-full">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center">
+                    <img src="../assets/logo.png" alt="AMEP Logo" class="h-8 w-8 mr-2" />
+                    <span class="text-xl font-bold tracking-wide bg-gradient-to-r from-blue-500 via-indigo-500 to-teal-500 bg-clip-text text-transparent">
+                        AMEP
+                    </span>
+                </div>
+                <nav class="hidden md:flex space-x-6">
+                    <a href="teacher-dashboard.html" class="text-gray-300 hover:text-white transition-colors">Dashboard</a>
+                    <a href="classes.html" class="text-gray-300 hover:text-white transition-colors">Classes</a>
+                    <a href="create-project.html" class="text-white font-medium">Create Project</a>
+                </nav>
+                <div class="flex items-center space-x-4">
+                    <button id="mobile-menu-toggle" class="md:hidden text-gray-400 hover:text-white focus:outline-none">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                    <span class="text-gray-300 hidden sm:inline" id="user-name">Teacher</span>
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center">
+                        <span class="font-bold" id="user-initials">T</span>
+                    </div>
+                    <a href="#" id="desktop-logout-btn" class="hidden md:block text-gray-300 hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Mobile Navigation Overlay -->
+    <div id="mobile-nav-overlay" class="fixed inset-0 bg-black/80 z-50 hidden md:hidden">
+        <div class="flex flex-col h-full">
+            <div class="flex justify-between items-center p-6 border-b border-gray-800">
+                <div class="flex items-center">
+                    <img src="../assets/logo.png" alt="AMEP Logo" class="h-8 w-8 mr-2" />
+                    <span class="text-xl font-bold tracking-wide bg-gradient-to-r from-blue-500 via-indigo-500 to-teal-500 bg-clip-text text-transparent">
+                        AMEP
+                    </span>
+                </div>
+                <button id="close-mobile-nav" class="text-gray-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <nav class="flex-col p-6 space-y-6">
+                <a href="teacher-dashboard.html" class="text-gray-400 hover:text-white text-lg py-2 transition-colors">Dashboard</a>
+                <a href="classes.html" class="text-gray-400 hover:text-white text-lg py-2 transition-colors">Classes</a>
+                <a href="create-project.html" class="text-white font-medium text-lg py-2 border-l-4 border-blue-500 pl-4">Create Project</a>
+                <div class="border-t border-gray-800 pt-6 mt-6">
+                    <a href="#" class="text-gray-400 hover:text-white text-lg py-2 transition-colors">Settings</a>
+                    <a href="#" id="logout-btn" class="text-gray-400 hover:text-white text-lg py-2 transition-colors">Logout</a>
+                </div>
+            </nav>
+        </div>
+    </div>
+    
+    <!-- Main content -->
+    <div class="container mx-auto px-6 py-8">
+        <div class="mb-8">
+            <h1 class="text-4xl font-black leading-tight tracking-[-0.033em] text-white">Create New Project</h1>
+            <p class="text-gray-400 text-base font-normal leading-normal mt-2">Design and configure a new project for your students</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="rounded-xl p-6 bg-[#111618] border border-slate-800">
+                <label class="text-sm font-medium text-slate-300 block mb-2">Project Title</label>
+                <input id="project-title" class="w-full rounded-lg p-3 bg-[#0f1718] text-white border border-slate-700 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition" placeholder="Enter project title" />
+
+                <label class="text-sm font-medium text-slate-300 block mt-4 mb-2">Project Description</label>
+                <textarea id="project-description" class="w-full rounded-lg p-3 bg-[#0f1718] text-white border border-slate-700 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition" rows="6" placeholder="Describe the project..."></textarea>
+
+                <label class="text-sm font-medium text-slate-300 block mt-4 mb-2">Learning Objective</label>
+                <input id="project-learning-objective" class="w-full rounded-lg p-3 bg-[#0f1718] text-white border border-slate-700 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition" placeholder="E.g., Understand REST APIs" />
+
+                <div class="mt-6">
+                    <h3 class="text-white font-semibold">Submission Rules</h3>
+                    <p class="text-slate-400 text-sm">Allowed formats: PDF, PPT, DOCX</p>
+                    <div class="flex items-center gap-3 mt-3">
+                        <label class="inline-flex items-center"><input type="checkbox" id="format-pdf" class="mr-2" checked/>PDF</label>
+                        <label class="inline-flex items-center"><input type="checkbox" id="format-ppt" class="mr-2"/>PPT</label>
+                        <label class="inline-flex items-center"><input type="checkbox" id="format-docx" class="mr-2"/>DOCX</label>
+                    </div>
+
+                    <label class="text-sm font-medium text-slate-300 block mt-4 mb-2">Deadline</label>
+                    <input id="project-deadline" type="date" class="w-full rounded-lg p-3 bg-[#0f1718] text-white border border-slate-700 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition" />
+                </div>
+            </div>
+
+            <div class="rounded-xl p-6 bg-[#111618] border border-slate-800">
+                <h3 class="text-white font-semibold mb-4">Evaluation Rubric</h3>
+                <p class="text-slate-400 text-sm mb-4">Add criteria and a weight for each one.</p>
+                <div class="flex gap-2 mt-3">
+                    <input id="rubric-criterion" class="w-2/3 rounded-lg p-2 bg-[#0f1718] text-white border border-slate-700 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition" placeholder="Criterion (e.g., Code quality)" />
+                    <input id="rubric-weight" type="number" min="0" max="100" class="w-1/6 rounded-lg p-2 bg-[#0f1718] text-white border border-slate-700 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition" placeholder="Weight" />
+                    <button id="add-criterion-btn" class="bg-primary rounded-lg px-3">Add</button>
+                </div>
+
+                <ul id="rubric-list" class="mt-4 space-y-2"></ul>
+
+                <div class="mt-6">
+                    <label class="text-sm font-medium text-slate-300">Select class</label>
+                    <select id="project-class-select" class="w-full rounded-lg p-2 bg-[#0f1718] text-white border border-slate-700 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition mt-2">
+                        <option value="">(Optional) select a class</option>
+                    </select>
+                </div>
+
+                <div class="mt-6 flex items-center justify-between">
+                    <button id="publish-project-btn" class="bg-primary text-background-dark rounded-lg px-6 py-3 font-bold shadow-[0_0_15px_rgba(13,242,223,0.5)] hover:bg-primary/90 transition-all">Publish</button>
+                    <a href="classes.html" class="text-slate-400 hover:text-white">Back to Classes</a>
+                </div>
+            </div>
+        </div>
+
+        <div id="creation-feedback" class="mt-6"></div>
+    </div>
+</div>
+
+<script type="module">
+    import { teacherAPI } from '../src/services/api.js';
+    import { logout } from '../src/services/auth.js';
+    
+    // Add logout functionality
+    document.getElementById('desktop-logout-btn').addEventListener('click', function(e) {
+        e.preventDefault();
+        if (confirm('Are you sure you want to logout?')) {
+            logout();
+        }
+    });
+    
+    // Update user name display
+    function updateUserNameDisplay() {
+        // Get user name from localStorage
+        const userName = localStorage.getItem('userName') || 'Teacher';
+        
+        // Update user name in header
+        const userNameElement = document.getElementById('user-name');
+        if (userNameElement) {
+            userNameElement.textContent = userName;
+        }
+        
+        // Update user initials
+        const userInitialsElement = document.getElementById('user-initials');
+        if (userInitialsElement) {
+            const names = userName.split(' ');
+            let initials = '';
+            if (names.length > 1) {
+                initials = names[0].charAt(0) + names[names.length - 1].charAt(0);
+            } else {
+                initials = names[0].charAt(0) + names[0].charAt(1) || 'T';
+            }
+            userInitialsElement.textContent = initials.toUpperCase();
+        }
+    }
+    
+    // Mobile navigation toggle functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+        const closeMobileNav = document.getElementById('close-mobile-nav');
+        const mobileNavOverlay = document.getElementById('mobile-nav-overlay');
+        
+        if (mobileMenuToggle) {
+            mobileMenuToggle.addEventListener('click', function() {
+                mobileNavOverlay.classList.remove('hidden');
+            });
+        }
+        
+        if (closeMobileNav) {
+            closeMobileNav.addEventListener('click', function() {
+                mobileNavOverlay.classList.add('hidden');
+            });
+        }
+        
+        // Close mobile menu when clicking on a link
+        const mobileLinks = mobileNavOverlay.querySelectorAll('a');
+        mobileLinks.forEach(link => {
+            link.addEventListener('click', function() {
+                mobileNavOverlay.classList.add('hidden');
+            });
+        });
+        
+        // Add logout functionality for mobile
+        document.getElementById('logout-btn').addEventListener('click', function(e) {
+            e.preventDefault();
+            if (confirm('Are you sure you want to logout?')) {
+                logout();
+            }
+        });
+        
+        updateUserNameDisplay();
+    });
+
+    const addCriterionBtn = document.getElementById('add-criterion-btn');
+    const rubricList = document.getElementById('rubric-list');
+    const publishBtn = document.getElementById('publish-project-btn');
+    const classSelect = document.getElementById('project-class-select');
+
+    let rubric = [];
+
+    function renderRubric() {
+        rubricList.innerHTML = '';
+        rubric.forEach((r, idx) => {
+            const li = document.createElement('li');
+            li.className = 'flex items-center justify-between bg-[#0f1718] p-3 rounded-lg border border-slate-700';
+            li.innerHTML = `<div><p class="font-medium text-white">${r.criterion}</p><p class="text-slate-400 text-sm">Weight: ${r.weight}</p></div><button data-idx="${idx}" class="text-red-400 remove-criterion hover:text-red-300">Remove</button>`;
+            rubricList.appendChild(li);
+        });
+    }
+
+    addCriterionBtn.addEventListener('click', () => {
+        const criterionInput = document.getElementById('rubric-criterion');
+        const weightInput = document.getElementById('rubric-weight');
+        const criterion = criterionInput.value.trim();
+        const weight = parseInt(weightInput.value, 10) || 0;
+        if (!criterion) {
+            alert('Please enter a criterion');
+            return;
+        }
+        rubric.push({ criterion, weight });
+        criterionInput.value = '';
+        weightInput.value = '';
+        renderRubric();
+    });
+
+    rubricList.addEventListener('click', (e) => {
+        if (e.target.classList.contains('remove-criterion')) {
+            const idx = parseInt(e.target.getAttribute('data-idx'));
+            rubric.splice(idx, 1);
+            renderRubric();
+        }
+    });
+
+    // Load teacher's classes into the select
+    async function loadClasses() {
+        try {
+            const classes = await teacherAPI.getClasses();
+            classes.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.name;
+                classSelect.appendChild(opt);
+            });
+        } catch (err) {
+            console.error('Failed to load classes', err);
+        }
+    }
+
+    publishBtn.addEventListener('click', async () => {
+        const title = document.getElementById('project-title').value.trim();
+        const description = document.getElementById('project-description').value.trim();
+        const learningObjective = document.getElementById('project-learning-objective').value.trim();
+        const deadline = document.getElementById('project-deadline').value || null;
+        const formats = [];
+        if (document.getElementById('format-pdf').checked) formats.push('PDF');
+        if (document.getElementById('format-ppt').checked) formats.push('PPT');
+        if (document.getElementById('format-docx').checked) formats.push('DOCX');
+        const classId = classSelect.value ? parseInt(classSelect.value) : null;
+
+        if (!title) { alert('Project title is required'); return; }
+        if (!learningObjective) { alert('Learning objective is required'); return; }
+
+        const projectData = {
+            title,
+            description,
+            learning_outcomes: [learningObjective],
+            submission_rules: {
+                allowed_formats: formats,
+                deadline: deadline
+            },
+            evaluation_rubric: rubric,
+            start_date: new Date().toISOString(),
+            end_date: deadline || null
+        };
+
+        publishBtn.disabled = true;
+        publishBtn.textContent = 'Publishing...';
+
+        try {
+            const created = await teacherAPI.createProjects(projectData);
+            // If class selected, assign immediately
+            if (classId) {
+                await teacherAPI.assignProjectToClass(classId, { project_id: created.id });
+            }
+            document.getElementById('creation-feedback').innerHTML = `<div class="rounded-lg p-4 bg-green-800 text-green-200">Project created successfully.</div>`;
+            // Optionally navigate to class details or projects list
+            setTimeout(() => { window.location.href = 'classes.html'; }, 900);
+        } catch (err) {
+            console.error('Failed to create project', err);
+            alert('Failed to create project: ' + (err.message || err));
+        } finally {
+            publishBtn.disabled = false;
+            publishBtn.textContent = 'Publish';
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadClasses();
+    });
+</script>
+</body>
+</html>
