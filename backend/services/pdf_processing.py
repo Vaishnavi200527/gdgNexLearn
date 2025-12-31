@@ -1,517 +1,319 @@
 #!/usr/bin/env python3
 """
-PDF Processing Service
-Handles PDF file parsing and text extraction for the adaptive learning platform
+PDF Processing Service - FINAL WORKING VERSION
 """
 
 import PyPDF2
 import io
 import re
+import logging
+import json
 from typing import Dict, List, Any
+from concept_extractor import extract_concepts_with_gemini, extract_clean_pdf_text_only
 
-def extract_text_from_pdf(content: bytes) -> str:
-    """
-    Extract text content from PDF bytes
-    
-    Args:
-        content: PDF file content as bytes
-        
-    Returns:
-        Extracted text content from all pages
-    """
-    try:
-        pdf_reader = PyPDF2.PdfReader(io.BytesIO(content))
-        
-        # Extract text from all pages
-        text_content = ""
-        for page in pdf_reader.pages:
-            text_content += page.extract_text() + "\n"
-            
-        return text_content
-    except Exception as e:
-        raise Exception(f"Error extracting text from PDF: {str(e)}")
+logger = logging.getLogger(__name__)
 
-def get_pdf_metadata(content: bytes) -> Dict[str, Any]:
-    """
-    Get metadata information from PDF
+class PDFProcessor:
+    """Process PDFs and extract ONLY meaningful concepts."""
     
-    Args:
-        content: PDF file content as bytes
-        
-    Returns:
-        Dictionary containing PDF metadata
-    """
-    try:
-        pdf_reader = PyPDF2.PdfReader(io.BytesIO(content))
-        
-        metadata = {
-            "page_count": len(pdf_reader.pages),
-            "author": pdf_reader.metadata.author if pdf_reader.metadata else None,
-            "creator": pdf_reader.metadata.creator if pdf_reader.metadata else None,
-            "producer": pdf_reader.metadata.producer if pdf_reader.metadata else None,
-            "subject": pdf_reader.metadata.subject if pdf_reader.metadata else None,
-            "title": pdf_reader.metadata.title if pdf_reader.metadata else None
+    def __init__(self):
+        self.meaningless_phrases = {
+            "the values", "the sorted values", "mostly data", "these tests",
+            "the observed values", "the expected values", "smoothing by bin",
+            "skewed data", "best used when data", "handle noisy data",
+            "the value", "use multiple linear regression", "square test formula",
+            "data data", "there", "here", "each", "which"
         }
-        
-        return metadata
-    except Exception as e:
-        raise Exception(f"Error getting PDF metadata: {str(e)}")
-
-def process_pdf_for_adaptive_learning(content: bytes) -> Dict[str, Any]:
-    """
-    Process PDF for adaptive learning by extracting text and metadata
     
-    Args:
-        content: PDF file content as bytes
+    def extract_text_from_pdf(self, pdf_bytes: bytes) -> str:
+        """Extract raw text from PDF."""
+        try:
+            pdf_file = io.BytesIO(pdf_bytes)
+            pdf_reader = PyPDF2.PdfReader(pdf_file)
+            
+            text = ""
+            for page in pdf_reader.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text + "\n\n"
+            
+            return text.strip()
+        except Exception as e:
+            logger.error(f"PDF text extraction failed: {e}")
+            raise
+    
+    def is_meaningful_concept(self, concept_name: str) -> bool:
+        """Determine if a concept name is meaningful."""
+        if not concept_name:
+            return False
         
-    Returns:
-        Dictionary containing processed PDF information for adaptive learning
-    """
-    try:
-        # Extract text content
-        text_content = extract_text_from_pdf(content)
+        concept_lower = concept_name.lower().strip()
         
-        # Get metadata
-        metadata = get_pdf_metadata(content)
+        # REJECT meaningless phrases
+        if concept_lower in self.meaningless_phrases:
+            return False
         
-        # Calculate basic statistics
-        word_count = len(text_content.split())
-        char_count = len(text_content)
+        # REJECT if starts with meaningless words
+        if concept_lower.startswith(('the ', 'these ', 'mostly ', 'best ', 'handle ', 'use ')):
+            return False
+        
+        # REJECT single words (usually not meaningful concepts)
+        if len(concept_name.split()) < 2:
+            return False
+        
+        # REJECT too short or too long
+        if len(concept_name) < 5 or len(concept_name) > 60:
+            return False
+        
+        # MUST start with capital letter
+        if not concept_name[0].isupper():
+            return False
+        
+        # Should look like a proper concept (not a sentence fragment)
+        if concept_name.endswith('?') or concept_name.endswith('!'):
+            return False
+        
+        return True
+    
+    def format_concept_output(self, concept: Dict[str, str]) -> Dict[str, Any]:
+        """Format a concept for final output."""
+        name = concept.get('name', '').strip()
+        description = concept.get('description', '').strip()
+        
+        # Ensure description has proper formatting
+        if '\\n\\n' not in description and '\n\n' not in description:
+            # Add double newline before bullet points
+            if '*' in description:
+                bullet_index = description.find('*')
+                if bullet_index > 0:
+                    description = description[:bullet_index].rstrip() + '\n\n' + description[bullet_index:]
+            else:
+                # Create bullet points from sentences
+                sentences = [s.strip() + '.' for s in description.split('.') if s.strip()]
+                if len(sentences) > 1:
+                    description = sentences[0] + '\n\n* ' + '\n* '.join(sentences[1:4])
+        
+        # Extract examples and key points
+        examples = []
+        key_points = []
+        
+        # Look for examples in description
+        lines = description.split('\n')
+        for line in lines:
+            line_lower = line.lower()
+            if any(phrase in line_lower for phrase in ['for example', 'e.g.', 'such as', 'including']):
+                examples.append(line.strip())
+        
+        # Extract key points (bullet points)
+        for line in lines:
+            if line.strip().startswith('*'):
+                key_points.append(line.strip()[2:].strip())
         
         return {
-            "text_content": text_content,
-            "metadata": metadata,
-            "statistics": {
-                "word_count": word_count,
-                "character_count": char_count
-            }
+            "name": name,
+            "definition": description.split('.')[0] + '.' if '.' in description else description,
+            "description": description,
+            "examples": examples[:2],
+            "key_points": key_points[:4] if key_points else self.extract_key_points(description)
         }
-    except Exception as e:
-        raise Exception(f"Error processing PDF for adaptive learning: {str(e)}")
+    
+    def extract_key_points(self, description: str) -> List[str]:
+        """Extract key points from description."""
+        key_points = []
+        sentences = [s.strip() + '.' for s in description.split('.') if s.strip()]
+        
+        # Take the most important sounding sentences
+        for sentence in sentences[1:5]:  # Skip definition sentence
+            if len(sentence) > 30 and any(word in sentence.lower() for word in ['include', 'involve', 'essential', 'important', 'critical']):
+                key_points.append(sentence)
+        
+        return key_points[:3]
+    
+    def get_fallback_concepts(self, text: str) -> List[Dict[str, Any]]:
+        """Get fallback concepts if AI extraction fails."""
+        # Common data preprocessing concepts
+        common_concepts = [
+            "Data Preprocessing",
+            "Data Cleaning", 
+            "Data Integration",
+            "Data Transformation",
+            "Data Reduction",
+            "Normalization",
+            "Dimensionality Reduction",
+            "Feature Selection",
+            "Outlier Detection",
+            "Missing Data Handling",
+            "Noise Reduction",
+            "Data Quality",
+            "Binning Methods",
+            "Regression Analysis",
+            "Chi-Square Test"
+        ]
+        
+        concepts = []
+        for concept_name in common_concepts[:12]:  # Take first 12
+            if concept_name.lower() in text.lower():
+                concepts.append({
+                    "name": concept_name,
+                    "definition": f"{concept_name} is a key concept in data preprocessing and data mining.",
+                    "description": f"{concept_name} is a key concept in data preprocessing and data mining.\n\n* Essential for preparing data for analysis* Improves data quality and reliability* Used in various data mining applications",
+                    "examples": [],
+                    "key_points": ["Essential for data preparation", "Improves data quality", "Used in data mining"]
+                })
+        
+        return concepts
+    
+    def process_pdf(self, pdf_bytes: bytes) -> Dict[str, Any]:
+        """Main processing function."""
+        try:
+            # Step 1: Extract raw text
+            raw_text = self.extract_text_from_pdf(pdf_bytes)
+            
+            if not raw_text or len(raw_text.strip()) < 100:
+                return {
+                    "success": False,
+                    "error": "PDF is empty or has no extractable text",
+                    "concepts": []
+                }
+            
+            # Step 2: Use AI to extract concepts
+            ai_concepts = extract_concepts_with_gemini(raw_text)
+            
+            # Step 3: Validate and format concepts
+            valid_concepts = []
+            
+            for concept in ai_concepts:
+                concept_name = concept.get('name', '').strip()
+                
+                # STRICT VALIDATION
+                if not self.is_meaningful_concept(concept_name):
+                    continue
+                
+                # Format the concept
+                formatted_concept = self.format_concept_output(concept)
+                valid_concepts.append(formatted_concept)
+                
+                if len(valid_concepts) >= 15:
+                    break
+            
+            # # Step 4: If AI failed, use fallback
+            # if len(valid_concepts) < 8:
+            #     logger.warning(f"AI extracted only {len(valid_concepts)} concepts, using fallback")
+            #     
+            #     # Get clean text for fallback
+            #     clean_text, _ = extract_clean_pdf_text_only(raw_text)
+            #     fallback_concepts = self.get_fallback_concepts(clean_text)
+            #     
+            #     # Add unique fallback concepts
+            #     existing_names = {c['name'].lower() for c in valid_concepts}
+            #     for fb_concept in fallback_concepts:
+            #         if fb_concept['name'].lower() not in existing_names:
+            #             valid_concepts.append(fb_concept)
+            #             existing_names.add(fb_concept['name'].lower())
+            #             
+            #             if len(valid_concepts) >= 15:
+            #                 break
+            # 
+            # # Step 5: Ensure we have 10-15 concepts
+            # if len(valid_concepts) < 10:
+            #     # Add more generic concepts
+            #     generic_concepts = [
+            #         "Data Mining", "Machine Learning", "Statistical Analysis",
+            #         "Data Visualization", "Pattern Recognition", "Predictive Modeling"
+            #     ]
+            #     
+            #     for gen_concept in generic_concepts:
+            #         if len(valid_concepts) >= 10:
+            #             break
+            #         
+            #         valid_concepts.append({
+            #             "name": gen_concept,
+            #             "definition": f"{gen_concept} is an important field in data science.",
+            #             "description": f"{gen_concept} is an important field in data science.\n\n* Used for extracting insights from data* Involves various algorithms and techniques* Essential for business intelligence",
+            #             "examples": [],
+            #             "key_points": ["Extracts insights from data", "Uses algorithms and techniques", "Supports decision making"]
+            #         })
+            
+            # Step 6: Get metadata
+            metadata = self.get_pdf_metadata(pdf_bytes)
+            
+            # Calculate word and character count
+            total_words = len(raw_text.split())
+            total_characters = len(raw_text)
+
+            return {
+                "success": True,
+                "text_content": raw_text,
+                "concepts": valid_concepts[:15],  # Ensure max 15
+                "metadata": metadata,
+                "statistics": {
+                    "total_concepts": len(valid_concepts),
+                    "pages": metadata.get("page_count", 0),
+                    "valid_concepts": len([c for c in valid_concepts if self.is_meaningful_concept(c['name'])]),
+                    "total_words": total_words,
+                    "total_characters": total_characters,
+                },
+                "message": f"Successfully extracted {len(valid_concepts)} meaningful concepts"
+            }
+        except Exception as e:
+            logger.error(f"PDF processing failed: {e}", exc_info=True)
+            return {
+                "success": False,
+                "error": str(e),
+                "concepts": [],
+                "message": "Failed to process PDF"
+            }
+    
+    def get_pdf_metadata(self, pdf_bytes: bytes) -> Dict[str, Any]:
+        """Extract PDF metadata."""
+        try:
+            pdf_file = io.BytesIO(pdf_bytes)
+            pdf_reader = PyPDF2.PdfReader(pdf_file)
+            
+            return {
+                "page_count": len(pdf_reader.pages),
+                "title": pdf_reader.metadata.title if pdf_reader.metadata else "Unknown",
+                "author": pdf_reader.metadata.author if pdf_reader.metadata else "Unknown",
+                "creator": pdf_reader.metadata.creator if pdf_reader.metadata else "Unknown",
+                "subject": pdf_reader.metadata.subject if pdf_reader.metadata else "Unknown"
+            }
+        except:
+            return {
+                "page_count": 0,
+                "title": "Unknown",
+                "author": "Unknown",
+                "creator": "Unknown",
+                "subject": "Unknown"
+            }
+
+# Create global instance
+pdf_processor = PDFProcessor()
+
+# Public API functions
+def process_pdf_for_concepts(pdf_content: bytes) -> Dict[str, Any]:
+    """Process PDF and extract meaningful concepts."""
+    return pdf_processor.process_pdf(pdf_content)
+
+# For backward compatibility
+def process_pdf_for_adaptive_learning(content: bytes) -> Dict[str, Any]:
+    """Legacy function name."""
+    return process_pdf_for_concepts(content)
 
 def identify_key_concepts(text: str) -> List[Dict[str, Any]]:
-    """
-    Identify key concepts within the text using text analysis techniques.
-    
-    Args:
-        text: The text content to analyze
-        
-    Returns:
-        List of identified concepts with details
-    """
-    # Common patterns for identifying concepts in academic text
-    concept_patterns = [
-        # Look for "concept is/are definition" patterns
-        r'([A-Z][a-zA-Z\s]{3,20}?)\s+(?:is|are|was|were|represents|means|stands for)\s+([^\.]+?\.)',
-        # Look for section headers (often bold or capitalized)
-        r'^\s*([A-Z][A-Z\s]{5,50}|[A-Z][a-zA-Z\s]{5,30})\s*$',
-        # Look for bold-like formatting (words in all caps or with specific formatting)
-        r'\*\*([A-Z][a-zA-Z\s]{3,30}?)\*\*',
-        # Look for "The [concept] concept" patterns
-        r'The\s+([A-Z][a-zA-Z\s]{3,20}?)\s+concept',
-        # Look for "A [concept] is" patterns
-        r'A\s+([A-Z][a-zA-Z\s]{3,20}?)\s+(?:is|was|represents)',
-    ]
-    
-    concepts = set()
-    
-    # Find concepts using patterns
-    for pattern in concept_patterns:
-        matches = re.finditer(pattern, text, re.MULTILINE | re.IGNORECASE)
-        for match in matches:
-            if match and match.groups():  # Check if match exists and has groups
-                concept = match.group(1).strip()
-                # Filter out common words that are not concepts
-                if len(concept) > 2 and not concept.lower() in ['the', 'and', 'for', 'are', 'but', 'not', 'with', 'has', 'have', 'had', 'can', 'will', 'would', 'should', 'could', 'this', 'that', 'these', 'those', 'what', 'when', 'where', 'who', 'why', 'how', 'all', 'any', 'each', 'every', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'than', 'too', 'very', 'just', 'now']:
-                    concepts.add(concept)
-    
-    # Also extract potential concepts from capitalized words/phrases
-    # Look for capitalized phrases that might be concepts
-    capitalized_phrases = re.findall(r'\b[A-Z][a-z]{2,}(?:\s+[A-Z][a-z]*){0,4}\b', text)
-    for phrase in capitalized_phrases:
-        if len(phrase) > 2 and phrase not in concepts and phrase.lower() not in ['the', 'and', 'for', 'are', 'but', 'not', 'with', 'has', 'have', 'had', 'can', 'will', 'would', 'should', 'could', 'this', 'that', 'these', 'those', 'what', 'when', 'where', 'who', 'why', 'how', 'all', 'any', 'each', 'every', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'than', 'too', 'very', 'just', 'now']:
-            concepts.add(phrase)
-    
-    # Create detailed concept explanations
-    detailed_concepts = []
-    for concept in concepts:
-        detailed_concept = generate_detailed_concept_explanation(concept, text)
-        detailed_concepts.append(detailed_concept)
-    
-    return detailed_concepts
-
-def generate_detailed_concept_explanation(concept: str, text: str) -> Dict[str, Any]:
-    """
-    Generate a detailed explanation for a concept based on the provided text.
-    
-    Args:
-        concept: The concept to explain
-        text: The source text to extract information from
-        
-    Returns:
-        Dictionary with detailed concept explanation
-    """
-    # Find definition in text
-    definition = find_definition_for_concept(concept, text)
-    if not definition:
-        definition = f"Definition of {concept} based on context"
-    
-    # Find examples in text
-    examples = find_examples_for_concept(concept, text)
-    
-    # Find key points and sub-topics
-    key_points = find_key_points_for_concept(concept, text)
-    
-    # Find prerequisites
-    prerequisites = find_prerequisites_for_concept(concept, text)
-    
-    # Find related terms
-    related_terms = find_related_terms(concept, text)
-    
-    # Find applications
-    applications = find_applications_for_concept(concept, text)
-    
-    # Find common misconceptions
-    misconceptions = find_common_misconceptions(concept, text)
-    
-    # Find sub-topics
-    sub_topics = find_sub_topics(concept, text)
-    
-    # Generate step-by-step breakdown if possible
-    step_by_step = generate_step_by_step_breakdown(concept, text)
-    
-    # Create detailed explanation
-    explanation = {
-        "name": concept,
-        "definition": definition,
-        "examples": examples,
-        "key_points": key_points,
-        "prerequisites": prerequisites,
-        "related_terms": related_terms,
-        "applications": applications,
-        "misconceptions": misconceptions,
-        "detailed_explanation": generate_detailed_explanation(concept, text),
-        "sub_topics": sub_topics,
-        "step_by_step_breakdown": step_by_step
-    }
-    
-    return explanation
-
-def find_definition_for_concept(concept: str, text: str) -> str:
-    """Find the definition of a concept in the text."""
-    # Look for definition patterns
-    patterns = [
-        rf'([A-Z][a-zA-Z\s]*?{re.escape(concept)}[a-zA-Z\s]*?)\s+(?:is|are|was|were|represents|means|stands for|defines)\s+([^\.]+?\.)',
-        rf'{re.escape(concept)}\s+(?:is|are|was|were|represents|means|stands for|defines)\s+([^\.]+?\.)',
-        rf'The\s+{re.escape(concept)}\s+(?:is|are|was|were|represents|means|stands for)\s+([^\.]+?\.)',
-        rf'A\s+{re.escape(concept)}\s+(?:is|represents|means)\s+([^\.]+?\.)',
-        rf'{re.escape(concept)}.*?(?:refers to|can be defined as|is defined as)\s+([^\.]+?\.)',
-    ]
-    
-    for pattern in patterns:
-        match = re.search(pattern, text, re.IGNORECASE)
-        if match:
-            # Get the last matching group
-            groups = match.groups()
-            if groups:
-                # Find the last non-empty group
-                for i in range(len(groups)-1, -1, -1):
-                    if groups[i]:
-                        return groups[i].strip()
-                # If all groups are empty, return the full match
-                return match.group(0).strip()
-            else:
-                # If no groups, return the full match
-                return match.group(0).strip()
-    
-    # If no definition found, return a basic definition
-    return f"{concept} is a concept discussed in the provided text."
-
-def find_examples_for_concept(concept: str, text: str) -> List[str]:
-    """Find examples related to the concept in the text."""
-    examples = []
-    
-    # Look for example patterns
-    patterns = [
-        rf'(?:For example|For instance|Example|Examples):\s*([^\.]+?\.)',
-        rf'(?:For example|For instance|Example|Examples)\s+(.*?)(?:\.|\n)',
-        rf'{re.escape(concept)}.*?(?:For example|For instance|Example):\s*([^\.]+?\.)',
-        rf'(?:such as)\s+([^\.]+?\.)',
-        rf'{re.escape(concept)}.*?(?:like|as in)\s+([^\.]+?\.)',
-    ]
-    
-    for pattern in patterns:
-        matches = re.findall(pattern, text, re.IGNORECASE)
-        for match in matches:
-            example = match.strip()
-            if example and concept.lower() in example.lower():
-                examples.append(example)
-    
-    # If no specific examples found, extract sentences that mention the concept
-    if not examples:
-        sentences = text.split('.')
-        for sentence in sentences:
-            if concept.lower() in sentence.lower() and len(sentence.strip()) > 10:
-                examples.append(sentence.strip() + '.')
-                if len(examples) >= 3:  # Limit to 3 examples
-                    break
-    
-    return examples[:5]  # Return at most 5 examples
-
-def find_key_points_for_concept(concept: str, text: str) -> List[str]:
-    """Find key points related to the concept in the text."""
-    key_points = []
-    
-    # Look for key point patterns
-    patterns = [
-        r'(?:Key point|Key points|Important|Significant|Critical):\s*([^\.]+?\.)',
-        r'(?:First|Second|Third|Next|Finally).*?([^\.]+?\.)',
-        rf'(?:One|Another|Additionally).*?{re.escape(concept)}.*?([^\.]+?\.)',
-    ]
-    
-    # Find sentences that contain the concept and seem important
-    sentences = text.split('.')
-    for sentence in sentences:
-        if concept.lower() in sentence.lower():
-            sentence = sentence.strip()
-            if sentence and ('important' in sentence.lower() or 
-                           'key' in sentence.lower() or 
-                           'significant' in sentence.lower() or
-                           'main' in sentence.lower() or
-                           'primary' in sentence.lower() or
-                           'crucial' in sentence.lower() or
-                           'essential' in sentence.lower() or
-                           'critical' in sentence.lower()):
-                key_points.append(sentence + '.')
-
-    # If no specific key points found, get sentences that mention the concept
-    if not key_points:
-        for sentence in sentences:
-            if concept.lower() in sentence.lower() and len(sentence.strip()) > 15:
-                key_points.append(sentence.strip() + '.')
-                if len(key_points) >= 5:  # Limit to 5 key points
-                    break
-    
-    return key_points[:5]
-
-def find_prerequisites_for_concept(concept: str, text: str) -> List[str]:
-    """Find prerequisites for understanding the concept."""
-    prerequisites = []
-    
-    # Look for prerequisite patterns
-    patterns = [
-        r'(?:requires|requires understanding of|prerequisite|pre-requisite|before learning|before understanding).*?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)',
-        rf'(?:To understand|To learn|Before studying)\s+{re.escape(concept)}.*?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)',
-        r'(?:depends on|builds on|based on)\s+([^\.]+?\.)',
-        r'(?:assumes knowledge of|assumes familiarity with)\s+([^\.]+?\.)',
-    ]
-    
-    for pattern in patterns:
-        matches = re.findall(pattern, text, re.IGNORECASE)
-        for match in matches:
-            if match.lower() != concept.lower():
-                prerequisites.append(match.strip())
-    
-    return list(set(prerequisites))[:5]  # Return unique prerequisites, max 5
-
-def find_related_terms(concept: str, text: str) -> List[str]:
-    """Find related terms to the concept."""
-    related_terms = []
-    
-    # Look for related term patterns
-    patterns = [
-        rf'{re.escape(concept)}.*?(?:and|with|related to|connected to|associated with)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)',
-        r'(?:similar to|related to|connected to|associated with)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)',
-        r'(?:also known as|AKA|alias)\s+([^\.]+?\.)',
-        r'(?:synonymous with|similar to|comparable to)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)',
-    ]
-    
-    for pattern in patterns:
-        matches = re.findall(pattern, text, re.IGNORECASE)
-        for match in matches:
-            if match.lower() != concept.lower():
-                related_terms.append(match.strip())
-    
-    # Extract capitalized terms that appear near the concept
-    sentences = text.split('.')
-    for sentence in sentences:
-        if concept.lower() in sentence.lower():
-            # Find other capitalized terms in the same sentence
-            other_terms = re.findall(r'\b[A-Z][a-z]{2,}(?:\s+[A-Z][a-z]*){0,2}\b', sentence)
-            for term in other_terms:
-                if term.lower() != concept.lower() and term not in related_terms:
-                    related_terms.append(term)
-    
-    return list(set(related_terms))[:10]  # Return unique terms, max 10
-
-def find_applications_for_concept(concept: str, text: str) -> List[str]:
-    """Find applications of the concept."""
-    applications = []
-    
-    # Look for application patterns
-    patterns = [
-        rf'{re.escape(concept)}.*?(?:used in|applied in|application|applied for|used for)\s+([^\.]+?\.)',
-        rf'(?:used in|applied in|application|applied for|used for)\s+{re.escape(concept)}.*?([^\.]+?\.)',
-        rf'(?:used|applied|implement|utilize).*?{re.escape(concept)}.*?([^\.]+?\.)',
-        r'(?:practical application|real-world use|in practice)\s+([^\.]+?\.)',
-    ]
-    
-    for pattern in patterns:
-        matches = re.findall(pattern, text, re.IGNORECASE)
-        for match in matches:
-            applications.append(match.strip())
-    
-    # If no specific applications found, get sentences that mention usage
-    if not applications:
-        sentences = text.split('.')
-        for sentence in sentences:
-            if concept.lower() in sentence.lower() and ('used' in sentence.lower() or 
-                                                      'applied' in sentence.lower() or
-                                                      'application' in sentence.lower() or
-                                                      'implement' in sentence.lower() or
-                                                      'practice' in sentence.lower() or
-                                                      'real-world' in sentence.lower()):
-                applications.append(sentence.strip() + '.')
-    
-    return applications[:5]
-
-def find_common_misconceptions(concept: str, text: str) -> List[str]:
-    """Find common misconceptions about the concept if mentioned in text."""
-    misconceptions = []
-    
-    # Look for misconception patterns
-    patterns = [
-        r'(?:common misconception|common mistake|often confused|often mistaken)\s+([^\.]+?\.)',
-        r'(?:beware of|be careful|note that|important to remember)\s+([^\.]+?\.)',
-        rf'{re.escape(concept)}.*?(?:is not|does not mean|not to be confused with)\s+([^\.]+?\.)',
-        r'(?:misunderstanding|misconception|wrongly assumed)\s+([^\.]+?\.)',
-    ]
-    
-    for pattern in patterns:
-        matches = re.findall(pattern, text, re.IGNORECASE)
-        for match in matches:
-            misconceptions.append(match.strip())
-    
-    return misconceptions[:3]
-
-def generate_detailed_explanation(concept: str, text: str) -> str:
-    """Generate a detailed explanation of the concept based on the text."""
-    # Find sentences that contain the concept
-    sentences = text.split('.')
-    concept_sentences = []
-    
-    for sentence in sentences:
-        if concept.lower() in sentence.lower():
-            concept_sentences.append(sentence.strip())
-    
-    if concept_sentences:
-        # Combine relevant sentences into a detailed explanation
-        explanation = " ".join(concept_sentences[:10])  # Use up to 10 sentences
-        return explanation.strip() + "."
-    else:
-        return f"Detailed explanation of {concept} based on the provided text content."
-
-def find_sub_topics(concept: str, text: str) -> List[str]:
-    """Find sub-topics related to the concept."""
-    sub_topics = []
-    
-    # Look for sub-topic patterns
-    patterns = [
-        rf'{re.escape(concept)}.*?(?:includes|consists of|has|contains)\s+([^\.]+?\.)',
-        r'(?:includes|consists of|has|contains|comprises)\s+([^\.]+?\.)',
-        rf'(?:types|kinds|categories|variations)\s+of\s+{re.escape(concept)}.*?([^\.]+?\.)',
-        r'(?:subdivided into|broken down into)\s+([^\.]+?\.)',
-    ]
-    
-    for pattern in patterns:
-        matches = re.findall(pattern, text, re.IGNORECASE)
-        for match in matches:
-            sub_topics.append(match.strip())
-    
-    # Extract capitalized terms that appear after the concept
-    sentences = text.split('.')
-    for sentence in sentences:
-        if concept.lower() in sentence.lower():
-            # Look for terms after the concept
-            parts = sentence.split(concept)
-            if len(parts) > 1:
-                after_concept = parts[-1]
-                if isinstance(after_concept, str):
-                    terms = re.findall(r'\b[A-Z][a-z]{2,}(?:\s+[A-Z][a-z]*){0,2}\b', after_concept)
-                    for term in terms:
-                        if term not in sub_topics:
-                            sub_topics.append(term)
-    
-    return list(set(sub_topics))[:10]
-
-def generate_step_by_step_breakdown(concept: str, text: str) -> List[str]:
-    """Generate a step-by-step breakdown for the concept if applicable."""
-    steps = []
-    
-    # Look for step patterns in the text
-    patterns = [
-        rf'(?:Step\s*\d+|First|Second|Third|Next|Then|Finally).*?{re.escape(concept)}.*?([^\.]+?\.)',
-        r'(?:Step\s*\d+|First|Second|Third|Next|Then|Finally).*?([^\.]+?\.)',
-        rf'(?:process|procedure|method|algorithm).*?{re.escape(concept)}.*?([^\.]+?\.)',
-    ]
-    
-    for pattern in patterns:
-        matches = re.findall(pattern, text, re.IGNORECASE)
-        for match in matches:
-            steps.append(match.strip())
-    
-    # If no specific steps found, try to identify procedural content
-    sentences = text.split('.')
-    for sentence in sentences:
-        if concept.lower() in sentence.lower() and ('step' in sentence.lower() or 
-                                                  'process' in sentence.lower() or
-                                                  'procedure' in sentence.lower() or
-                                                  'first' in sentence.lower() or
-                                                  'then' in sentence.lower() or
-                                                  'next' in sentence.lower() or
-                                                  'finally' in sentence.lower()):
-            steps.append(sentence.strip() + '.')
-    
-    return steps[:10]  # Return up to 10 steps
-
-def process_pdf_for_text_learning(content: bytes) -> Dict[str, Any]:
-    """
-    Process PDF specifically for text-based learning with detailed concept explanations.
-    
-    Args:
-        content: PDF file content as bytes
-        
-    Returns:
-        Dictionary containing detailed concept explanations
-    """
+    """Identify key concepts from text (for backward compatibility)."""
     try:
-        # Extract text content
-        text_content = extract_text_from_pdf(content)
+        # Use AI extraction
+        ai_concepts = extract_concepts_with_gemini(text)
         
-        # Verify text_content is a string
-        if not isinstance(text_content, str):
-            raise ValueError(f"Expected string from extract_text_from_pdf, got {type(text_content)}")
+        # Format concepts
+        formatted_concepts = []
+        for concept in ai_concepts:
+            concept_name = concept.get('name', '').strip()
+            if pdf_processor.is_meaningful_concept(concept_name):
+                formatted_concept = pdf_processor.format_concept_output(concept)
+                formatted_concepts.append(formatted_concept)
         
-        # Get metadata
-        metadata = get_pdf_metadata(content)
-        
-        # Identify key concepts
-        concepts = identify_key_concepts(text_content)
-        
-        # Calculate statistics
-        word_count = len(text_content.split()) if text_content else 0
-        char_count = len(text_content) if isinstance(text_content, str) else 0
-        
-        # Return structured learning content
-        return {
-            "concepts": concepts,
-            "text_content": text_content,
-            "metadata": metadata,
-            "statistics": {
-                "word_count": word_count,
-                "character_count": char_count,
-                "concept_count": len(concepts)
-            }
-        }
+        return formatted_concepts[:15]
     except Exception as e:
-        raise Exception(f"Error processing PDF for text-based learning: {str(e)}")
+        logger.error(f"identify_key_concepts failed: {e}")
+        return []

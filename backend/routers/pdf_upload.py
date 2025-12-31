@@ -11,7 +11,7 @@ import PyPDF2
 import io
 import json
 from database import get_db
-from services.pdf_processing import process_pdf_for_text_learning
+from services.pdf_processing import process_pdf_for_adaptive_learning
 import models
 import os
 import uuid
@@ -53,7 +53,7 @@ async def create_adaptive_assignment(
         # We need to read the file again for processing
         with open(file_path, "rb") as f:
             pdf_content = f.read()
-        result = process_pdf_for_text_learning(pdf_content)
+        result = process_pdf_for_adaptive_learning(pdf_content)
         concepts_data = result.get("concepts", [])
     except Exception as e:
         raise HTTPException(500, f"PDF Processing failed: {str(e)}")
@@ -155,10 +155,10 @@ async def process_pdf(
 
     # Extract content from uploaded file
     content = await file.read()
-    
+
     try:
         # Process PDF for text-based learning with detailed concept explanations
-        result = process_pdf_for_text_learning(content)
+        result = process_pdf_for_adaptive_learning(content)
         
         # Extract concepts from the result
         concepts_data = result.get("concepts", [])
@@ -254,8 +254,8 @@ async def process_pdf(
             "metadata": {
                 "pages": result.get("metadata", {}).get("page_count", 1),
                 "total_concepts": len(processed_concepts),
-                "word_count": result["statistics"]["word_count"],
-                "character_count": result["statistics"]["character_count"]
+                "word_count": result["statistics"]["total_words"],
+                "character_count": result["statistics"]["total_characters"]
             }
         }
 
@@ -277,10 +277,10 @@ async def process_pdf_detailed(
 
     # Extract content from uploaded file
     content = await file.read()
-    
+
     try:
         # Process PDF for text-based learning with detailed concept explanations
-        result = process_pdf_for_text_learning(content)
+        result = process_pdf_for_adaptive_learning(content)
         
         # Process concepts and store detailed explanations
         detailed_concepts = []
@@ -373,8 +373,8 @@ async def process_pdf_detailed(
             "metadata": {
                 "pages": result.get("metadata", {}).get("page_count", 1),
                 "total_concepts": len(detailed_concepts),
-                "word_count": result["statistics"]["word_count"],
-                "character_count": result["statistics"]["character_count"]
+                "word_count": result["statistics"]["total_words"],
+                "character_count": result["statistics"]["total_characters"]
             }
         }
 
