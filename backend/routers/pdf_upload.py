@@ -27,72 +27,44 @@ async def process_pdf(
 
     # Extract content from uploaded file
     content = await file.read()
-    
+
     try:
         # Process PDF for text-based learning with detailed concept explanations
         result = process_pdf_for_text_learning(content)
-        
+
         # Extract concepts from the result
         concepts_data = result.get("concepts", [])
-        
+
         # Process each concept and store in database
         processed_concepts = []
-<<<<<<< HEAD
-        if isinstance(raw_concepts, list):
-            concepts_list = raw_concepts
-        elif isinstance(raw_concepts, dict):
-            concepts_list = [raw_concepts]
-        else:
-            concepts_list = []
-
-        for concept_data in concepts_list:
-            # Extract concept name and description
-            concept_name = concept_data.get('concept') or concept_data.get('name') or 'Unknown Concept'
-            concept_description = concept_data.get('definition') or concept_data.get('description') or 'No description available'
-
-            # Check if concept already exists
-            existing_concept = db.query(models.Concepts).filter(
-                models.Concepts.concept_name.ilike(concept_name)
-            ).first()
-
-            if existing_concept:
-                # Use existing concept
-                concept_id = existing_concept.id
-            else:
-                # Create new concept
-                new_concept = models.Concepts(
-                    concept_name=concept_name,
-                    description=concept_description
-=======
         for concept_data in concepts_data:
             # Create or update concept in database
             concept = db.query(models.Concepts).filter(
-                models.Concepts.name.ilike(f"%{concept_data['name']}%") | 
-                models.Concepts.name.ilike(concept_data['name'])
+                models.Concepts.concept_name.ilike(f"%{concept_data['name']}%") |
+                models.Concepts.concept_name.ilike(concept_data['name'])
             ).first()
 
             if not concept:
                 # Create new concept with detailed information
                 concept = models.Concepts(
-                    name=concept_data['name'],
+                    concept_name=concept_data['name'],
                     description=concept_data['definition'],
                     id_slug=concept_data['name'].lower().replace(' ', '-').replace('_', '-')
->>>>>>> d1b0e9665ef58abcf16ab9b737febfe080e00a82
                 )
-                
+
                 db.add(concept)
                 db.flush()  # Get ID without committing whole transaction
             else:
                 # Update existing concept with detailed information
                 concept.description = concept_data['definition']
-                
+
                 db.flush()
 
             # Create or update detailed explanation for this concept
             explanation = db.query(models.ConceptExplanations).filter(
                 models.ConceptExplanations.concept_id == concept.id
             ).first()
-            
+
             if not explanation:
                 # Create new detailed explanation
                 # Safely handle detailed_explanation field
@@ -100,7 +72,7 @@ async def process_pdf(
                 word_count = 0
                 if isinstance(detailed_exp, str):
                     word_count = len(detailed_exp.split())
-                
+
                 explanation = models.ConceptExplanations(
                     concept_id=concept.id,
                     title=concept_data['name'],
@@ -135,7 +107,7 @@ async def process_pdf(
 
             processed_concepts.append({
                 "id": concept.id,
-                "name": concept.name,
+                "name": concept.concept_name,
                 "description": concept.description,
                 "detailed_explanation": concept_data.get('detailed_explanation', ''),
                 "key_points": concept_data.get('key_points', []),
@@ -177,24 +149,24 @@ async def process_pdf_detailed(
 
     # Extract content from uploaded file
     content = await file.read()
-    
+
     try:
         # Process PDF for text-based learning with detailed concept explanations
         result = process_pdf_for_text_learning(content)
-        
+
         # Process concepts and store detailed explanations
         detailed_concepts = []
         for concept_data in result.get("concepts", []):
             # Create or update concept in database
             concept = db.query(models.Concepts).filter(
-                models.Concepts.name.ilike(f"%{concept_data['name']}%") | 
-                models.Concepts.name.ilike(concept_data['name'])
+                models.Concepts.concept_name.ilike(f"%{concept_data['name']}%") |
+                models.Concepts.concept_name.ilike(concept_data['name'])
             ).first()
 
             if not concept:
                 # Create new concept
                 concept = models.Concepts(
-                    name=concept_data['name'],
+                    concept_name=concept_data['name'],
                     description=concept_data['definition'],
                     id_slug=concept_data['name'].lower().replace(' ', '-').replace('_', '-')
                 )
@@ -209,7 +181,7 @@ async def process_pdf_detailed(
             explanation = db.query(models.ConceptExplanations).filter(
                 models.ConceptExplanations.concept_id == concept.id
             ).first()
-            
+
             if not explanation:
                 # Create new detailed explanation
                 # Safely handle detailed_explanation field
@@ -217,7 +189,7 @@ async def process_pdf_detailed(
                 word_count = 0
                 if isinstance(detailed_exp, str):
                     word_count = len(detailed_exp.split())
-                
+
                 explanation = models.ConceptExplanations(
                     concept_id=concept.id,
                     title=concept_data['name'],
@@ -290,10 +262,10 @@ async def get_concept_explanation(concept_id: int, db: Session = Depends(get_db)
     explanation = db.query(models.ConceptExplanations).filter(
         models.ConceptExplanations.concept_id == concept_id
     ).first()
-    
+
     if not explanation:
         raise HTTPException(404, "Concept explanation not found")
-    
+
     return {
         "concept_id": explanation.concept_id,
         "title": explanation.title,
