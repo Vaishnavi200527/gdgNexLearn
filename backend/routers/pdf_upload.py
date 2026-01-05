@@ -6,15 +6,143 @@ Provides endpoints for uploading and processing PDF files for text-based learnin
 
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
 from sqlalchemy.orm import Session
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import PyPDF2
 import io
 import json
 from database import get_db
-from services.pdf_processing import process_pdf_for_text_learning
+from services.pdf_processing import process_pdf_for_adaptive_learning
 import models
+import os
+import uuid
+from datetime import datetime
+from auth_utils import get_current_teacher
+import schemas
 
 router = APIRouter(tags=["PDF Upload"])
+
+STORAGE_PATH = os.path.join("storage", "assignments")
+if not os.path.exists(STORAGE_PATH):
+    os.makedirs(STORAGE_PATH)
+
+@router.post("/create-adaptive-assignment")
+async def create_adaptive_assignment(
+    file: UploadFile = File(...),
+    assignment_title: str = Form(...),
+    description: str = Form(...),
+    class_ids: str = Form(...), # Expecting a JSON string of a list of ints
+    due_date: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+    current_user: models.Users = Depends(get_current_teacher)
+):
+    if file.content_type != "application/pdf":
+        raise HTTPException(400, "Only PDF files are allowed")
+
+    # 1. Save the uploaded PDF
+    file_extension = os.path.splitext(file.filename)[1]
+    unique_filename = f"{uuid.uuid4()}{file_extension}"
+    file_path = os.path.join(STORAGE_PATH, unique_filename)
+    
+    with open(file_path, "wb") as buffer:
+        buffer.write(await file.read())
+    
+    content_url = f"/storage/assignments/{unique_filename}"
+
+    # 2. Process PDF to extract concepts
+    try:
+        # We need to read the file again for processing
+        with open(file_path, "rb") as f:
+            pdf_content = f.read()
+        result = process_pdf_for_adaptive_learning(pdf_content)
+        concepts_data = result.get("concepts", [])
+    except Exception as e:
+        raise HTTPException(500, f"PDF Processing failed: {str(e)}")
+
+    if not concepts_data:
+        raise HTTPException(400, "Could not extract any concepts from the PDF.")
+
+    # In this simplified version, we'll create one assignment for the whole PDF
+    # and link it to the first concept found.
+    # A more advanced version might create multiple assignments or a new parent concept.
+    
+    first_concept_data = concepts_data[0]
+    
+    # 3. Get or create the main concept
+    concept = db.query(models.Concepts).filter(
+        models.Concepts.name.ilike(f"%{first_concept_data['name']}%")
+    ).first()
+    
+    if not concept:
+        concept = models.Concepts(
+            name=first_concept_data['name'],
+            description=first_concept_data.get('definition', '')
+        )
+        db.add(concept)
+        db.commit()
+        db.refresh(concept)
+    
+    # 4. Create the Assignment
+    new_assignment = models.Assignments(
+        title=assignment_title,
+        description=description,
+        content_url=content_url,
+        teacher_id=current_user.id,
+        concept_id=concept.id, # Link to the first extracted concept
+        difficulty_level=3 # Default difficulty
+    )
+    db.add(new_assignment)
+    db.commit()
+    db.refresh(new_assignment)
+    
+    # 5. Assign to classes and students
+    try:
+        list_of_class_ids = json.loads(class_ids)
+    except json.JSONDecodeError:
+        raise HTTPException(400, "class_ids must be a JSON array of integers.")
+
+    due_date_obj = datetime.fromisoformat(due_date) if due_date else None
+    
+    for class_id in list_of_class_ids:
+        # Check if class exists
+        db_class = db.query(models.Classes).filter(models.Classes.id == class_id).first()
+        if not db_class:
+            # Maybe log a warning instead of raising an error
+            print(f"Warning: Class with id {class_id} not found.")
+            continue
+
+        # Create ClassAssignment
+        class_assignment = models.ClassAssignments(
+            class_id=class_id,
+            assignment_id=new_assignment.id,
+            due_date=due_date_obj,
+            assigned_at=datetime.utcnow()
+        )
+        db.add(class_assignment)
+
+        # Get all students in the class and create StudentAssignments
+        enrollments = db.query(models.ClassEnrollments).filter(models.ClassEnrollments.class_id == class_id).all()
+        for enrollment in enrollments:
+            student_assignment_exists = db.query(models.StudentAssignments).filter(
+                models.StudentAssignments.student_id == enrollment.student_id,
+                models.StudentAssignments.assignment_id == new_assignment.id
+            ).first()
+            if not student_assignment_exists:
+                student_assignment = models.StudentAssignments(
+                    student_id=enrollment.student_id,
+                    assignment_id=new_assignment.id,
+                    status=schemas.AssignmentStatus.ASSIGNED
+                )
+                db.add(student_assignment)
+
+    db.commit()
+
+    return {
+        "message": "Assignment created and assigned successfully",
+        "assignment_id": new_assignment.id,
+        "content_url": content_url,
+        "concepts_found": len(concepts_data)
+    }
+
 
 @router.post("/process-pdf")
 async def process_pdf(
@@ -30,8 +158,13 @@ async def process_pdf(
 
     try:
         # Process PDF for text-based learning with detailed concept explanations
+<<<<<<< HEAD
         result = process_pdf_for_text_learning(content)
 
+=======
+        result = process_pdf_for_adaptive_learning(content)
+        
+>>>>>>> 31d1d287acc7d6db0c326025d7fac1f9462033ea
         # Extract concepts from the result
         concepts_data = result.get("concepts", [])
 
@@ -126,8 +259,8 @@ async def process_pdf(
             "metadata": {
                 "pages": result.get("metadata", {}).get("page_count", 1),
                 "total_concepts": len(processed_concepts),
-                "word_count": result["statistics"]["word_count"],
-                "character_count": result["statistics"]["character_count"]
+                "word_count": result["statistics"]["total_words"],
+                "character_count": result["statistics"]["total_characters"]
             }
         }
 
@@ -152,8 +285,13 @@ async def process_pdf_detailed(
 
     try:
         # Process PDF for text-based learning with detailed concept explanations
+<<<<<<< HEAD
         result = process_pdf_for_text_learning(content)
 
+=======
+        result = process_pdf_for_adaptive_learning(content)
+        
+>>>>>>> 31d1d287acc7d6db0c326025d7fac1f9462033ea
         # Process concepts and store detailed explanations
         detailed_concepts = []
         for concept_data in result.get("concepts", []):
@@ -245,8 +383,8 @@ async def process_pdf_detailed(
             "metadata": {
                 "pages": result.get("metadata", {}).get("page_count", 1),
                 "total_concepts": len(detailed_concepts),
-                "word_count": result["statistics"]["word_count"],
-                "character_count": result["statistics"]["character_count"]
+                "word_count": result["statistics"]["total_words"],
+                "character_count": result["statistics"]["total_characters"]
             }
         }
 

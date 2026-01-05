@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Response
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 import uvicorn  # Add this import
 import models  # Import models to register them with SQLAlchemy Base
 from routers.student import router as student_router
@@ -16,14 +18,14 @@ from routers.classes import router as classes_router  # Add this import
 import models
 from database import engine
 
-app = FastAPI(title="AI-Powered Adaptive Learning Platform")
-
-# Create all tables on startup
-@app.on_event("startup")
-def startup_event():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     from database import Base
     Base.metadata.create_all(bind=engine)
     print("Database tables created on startup")
+    yield
+
+app = FastAPI(title="AI-Powered Adaptive Learning Platform", lifespan=lifespan)
 
 # Origins for CORS
 origins = [
@@ -31,6 +33,7 @@ origins = [
     "http://localhost:5173",  # Origin from the error message
     "http://localhost:8080",  # Common dev server port
     "http://127.0.0.1:5500",  # VS Code Live Server
+    "http://127.0.0.1:5173",  # Vite local IP
 ]
 
 # Add CORS middleware
@@ -42,6 +45,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount static files
+import os
+frontend2_path = os.path.join(os.path.dirname(__file__), "..", "frontend2")
+app.mount("/frontend2", StaticFiles(directory=frontend2_path, html=True), name="frontend2")
+
+storage_path = "storage"
+if not os.path.exists(storage_path):
+    os.makedirs(os.path.join(storage_path, "assignments"))
+app.mount("/storage", StaticFiles(directory=storage_path), name="storage")
 
 # Include routers
 app.include_router(auth_router, prefix="/auth")
@@ -240,8 +253,9 @@ const studentAPI = {
     },
 
     // --- Quiz Endpoints ---
-    getQuizzes: async () => {
-        return await apiRequest('/api/quizzes/student');
+    getAssignmentQuiz: async (assignmentId, count = 10) => {
+        // Pass question count to backend to generate appropriate number of questions
+        return await apiRequest(`/student/assignments/${assignmentId}/quiz?question_count=${count}`);
     },
 
     getQuiz: async (id) => {
@@ -252,10 +266,11 @@ const studentAPI = {
         return await apiRequest(`/api/quizzes/${id}/submit`, 'POST', data);
     },
 
-    // --- Dashboard/Stats Endpoints ---
-    getMastery: async () => {
-        return await apiRequest('/student/mastery');
+    submitAssignmentQuiz: async (assignmentId, data) => {
+        return await apiRequest(`/student/assignments/${assignmentId}/quiz/submit`, 'POST', data);
     },
+
+    // --- Dashboard/Stats Endpoints ---
 
     getProjects: async () => {
         return await apiRequest('/student/projects');
