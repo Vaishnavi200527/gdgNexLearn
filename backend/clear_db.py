@@ -8,6 +8,20 @@ def clear_data():
         
         # Delete in order of dependencies (child tables first)
         
+        # Mastery & Concepts
+        db.query(models.MasteryScores).delete()
+        db.query(models.StudentMastery).delete()
+        db.query(models.Concept).delete()
+        db.query(models.Question).delete()
+        db.query(models.Attempt).delete()
+        
+        # Assignments & Projects
+        db.query(models.Assignments).delete()
+        db.query(models.StudentAssignments).delete()
+        db.query(models.Projects).delete()
+        db.query(models.ProjectTeams).delete()
+        db.query(models.ProjectSubmissions).delete()
+        
         # Class related
         db.query(models.ClassAssignments).delete()
         db.query(models.ClassProjects).delete()
@@ -21,11 +35,16 @@ def clear_data():
         db.query(models.StudentXP).delete()
         db.query(models.SoftSkillScores).delete()
         db.query(models.EngagementLogs).delete()
-        db.query(models.ProjectTeams).delete()
-        db.query(models.Projects).delete()
-        db.query(models.StudentAssignments).delete()
-        db.query(models.Assignments).delete()
-        db.query(models.Concept).delete()
+        
+        # Quiz related
+        db.query(models.Quiz).delete()
+        db.query(models.QuizQuestion).delete()
+        db.query(models.ClassQuizzes).delete()
+        db.query(models.StudentQuizzes).delete()
+        
+        # Explanations & PDFs
+        db.query(models.ConceptExplanations).delete()
+        db.query(models.PDFDocuments).delete()
         
         # Notifications
         db.query(models.Notification).delete()

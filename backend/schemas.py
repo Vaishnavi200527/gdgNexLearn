@@ -16,6 +16,7 @@ class EngagementType(str, Enum):
 class AssignmentStatus(str, Enum):
     ASSIGNED = "assigned"
     SUBMITTED = "submitted"
+    COMPLETED = "completed"
     GRADED = "graded"
 
 # Base Models
@@ -98,15 +99,16 @@ class StudentAssignmentResponse(StudentAssignmentBase):
 class ProjectBase(BaseModel):
     title: str
     description: str
-    teacher_id: int
     start_date: Optional[datetime]
     end_date: Optional[datetime]
 
 class ProjectCreate(ProjectBase):
-    pass
+    evaluation_rubric: List[Dict[str, Any]] = []
 
 class ProjectResponse(ProjectBase):
     id: int
+    teacher_id: int
+    evaluation_rubric: List[Dict[str, Any]] = []
     
     class Config:
         from_attributes = True
@@ -518,6 +520,26 @@ class QuizForStudentResponse(QuizBase):
 
 class StudentQuizSubmission(BaseModel):
     answers: Dict[int, str]
+
+# Project Submission Schemas
+class ProjectSubmissionBase(BaseModel):
+    project_id: int
+    student_id: int
+    class_id: int
+    submission_url: Optional[str] = None
+    submission_notes: Optional[str] = None
+    status: AssignmentStatus = AssignmentStatus.SUBMITTED
+    score: Optional[float] = Field(None, ge=0, le=100)
+
+class ProjectSubmissionCreate(ProjectSubmissionBase):
+    pass
+
+class ProjectSubmissionResponse(ProjectSubmissionBase):
+    id: int
+    submitted_at: datetime
+    
+    class Config:
+        from_attributes = True
 
 # Quiz Submission and Statistics Schemas
 class QuizSubmissionResponse(StudentQuizResponse):

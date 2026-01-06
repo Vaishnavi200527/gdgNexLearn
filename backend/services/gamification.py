@@ -25,9 +25,9 @@ def award_xp(student_id: int, amount: int, db: Session):
         db.add(xp_record)
     print(f"Awarded {amount} XP to student {student_id}")
 
-def update_after_submission(student_id: int, assignment_id: int, db: Session):
+def update_after_submission(student_id: int, assignment_id: int, db: Session, submission_type: str = 'assignment'):
     """
-    Update student progress, XP, streaks, and badges after assignment submission.
+    Update student progress, XP, streaks, and badges after assignment or project submission.
     For demo purposes, we'll update mock values.
     """
     # In a real implementation, this would:
@@ -36,7 +36,7 @@ def update_after_submission(student_id: int, assignment_id: int, db: Session):
     # 3. Update streaks if applicable
     # 4. Award badges for achievements
     
-    print(f"Updating gamification metrics for student {student_id} after submitting assignment {assignment_id}")
+    print(f"Updating gamification metrics for student {student_id} after submitting {submission_type} {assignment_id}")
     
     # Example XP calculation (simplified):
     # xp_gained = base_xp * difficulty_multiplier * performance_bonus

@@ -86,7 +86,7 @@
 <!-- PageHeading -->
 <div class="flex flex-wrap justify-between items-center gap-4">
 <div class="flex flex-col gap-2">
-<h1 class="text-white text-4xl font-black leading-tight tracking-[-0.033em]">Assignments</h1>
+<h1 class="text-white text-4xl font-black leading-tight tracking-[-0.033em]">Assignments & Projects</h1>
 <p class="text-[#8B949E] text-base font-normal leading-normal">Manage and track your AMEP coursework.</p>
 </div>
 <!-- SearchBar -->
@@ -121,7 +121,7 @@
 <table class="w-full">
 <thead>
 <tr class="bg-black/20">
-<th class="px-6 py-4 text-left text-xs font-medium text-[#8B949E] uppercase tracking-wider">Assignment Title</th>
+<th class="px-6 py-4 text-left text-xs font-medium text-[#8B949E] uppercase tracking-wider">Title</th>
 <th class="px-6 py-4 text-left text-xs font-medium text-[#8B949E] uppercase tracking-wider">Course</th>
 <th class="px-6 py-4 text-left text-xs font-medium text-[#8B949E] uppercase tracking-wider">Due Date</th>
 <th class="px-6 py-4 text-left text-xs font-medium text-[#8B949E] uppercase tracking-wider">Status</th>
@@ -168,7 +168,7 @@
 <a href="#" id="logout-btn" class="text-gray-400 hover:text-white text-lg py-2 transition-colors">Logout</a>
 <script type="module">
 // Import required modules
-import { studentAPI } from '../js/api/studentApi.js';
+import { studentAPI } from '../src/services/api.js';
 import { logout } from '../src/services/auth.js';
 
 
@@ -269,7 +269,7 @@ function showLoadingState() {
         tbody.innerHTML = `
             <tr>
                 <td colspan="5" class="px-6 py-4 text-center text-gray-400">
-                    Loading assignments...
+                    Loading assignments and projects...
                 </td>
             </tr>
         `;
@@ -277,59 +277,76 @@ function showLoadingState() {
 }
 
 
-// Fetch and display assignments data
+// Fetch and display assignments and projects data
 async function fetchAssignmentsData() {
     try {
         showLoadingState();
        
         // Get student ID from localStorage or use default (1 for testing)
         const studentId = localStorage.getItem('studentId') || 1;
-        console.log('Fetching assignments for student ID:', studentId);
+        console.log('Fetching assignments and projects for student ID:', studentId);
        
         // Call the API without student ID (uses JWT token)
-        const response = await studentAPI.getAssignments();
-        console.log('Raw API response:', response);
+        const assignmentsResponse = await studentAPI.getAssignments();
+        const projectsResponse = await studentAPI.getProjects();
+        
+        console.log('Raw assignments response:', assignmentsResponse);
+        console.log('Raw projects response:', projectsResponse);
        
-        if (response.error) {
-            console.error('Error fetching assignments:', response.error);
-            if (response.error === 'Authentication required') {
-                 window.location.href = 'login.html';
-            }
-            return;
-        }
-
-
-        // The backend might be returning the data directly as an array
+        // Process assignments data
         let assignmentsData = [];
-       
-        if (Array.isArray(response)) {
-            // If response is already an array, use it directly
-            assignmentsData = response;
-        } else if (response && typeof response === 'object') {
-            // If response is an object, check for common data properties
-            if (Array.isArray(response.data)) {
-                assignmentsData = response.data;
-            } else if (Array.isArray(response.assignments)) {
-                assignmentsData = response.assignments;
-            } else if (response.items && Array.isArray(response.items)) {
-                assignmentsData = response.items;
+        
+        if (Array.isArray(assignmentsResponse)) {
+            assignmentsData = assignmentsResponse;
+        } else if (assignmentsResponse && typeof assignmentsResponse === 'object') {
+            if (Array.isArray(assignmentsResponse.data)) {
+                assignmentsData = assignmentsResponse.data;
+            } else if (Array.isArray(assignmentsResponse.assignments)) {
+                assignmentsData = assignmentsResponse.assignments;
+            } else if (assignmentsResponse.items && Array.isArray(assignmentsResponse.items)) {
+                assignmentsData = assignmentsResponse.items;
             } else {
-                // If we can't find an array in the response, log the response for debugging
-                console.warn('Unexpected response format, trying to use response as array');
-                assignmentsData = [response];
+                console.warn('Unexpected assignments response format, trying to use response as array');
+                assignmentsData = [assignmentsResponse];
             }
         }
-       
-        console.log('Processed assignments data:', assignmentsData);
-       
-        if (!Array.isArray(assignmentsData)) {
-            console.error('Failed to parse assignments data:', assignmentsData);
-            throw new Error('Invalid response format from server');
+        
+        // Process projects data
+        let projectsData = [];
+        
+        if (Array.isArray(projectsResponse)) {
+            projectsData = projectsResponse;
+        } else if (projectsResponse && typeof projectsResponse === 'object') {
+            if (Array.isArray(projectsResponse.data)) {
+                projectsData = projectsResponse.data;
+            } else if (Array.isArray(projectsResponse.projects)) {
+                projectsData = projectsResponse.projects;
+            } else if (projectsResponse.items && Array.isArray(projectsResponse.items)) {
+                projectsData = projectsResponse.items;
+            } else {
+                console.warn('Unexpected projects response format, trying to use response as array');
+                projectsData = [projectsResponse];
+            }
         }
-       
-        updateAssignmentsDisplay(assignmentsData);
+        
+        console.log('Processed assignments data:', assignmentsData);
+        console.log('Processed projects data:', projectsData);
+        
+        // Combine assignments and projects
+        const combinedData = [...assignmentsData, ...projectsData];
+        
+        // Add type property to distinguish between assignments and projects
+        combinedData.forEach(item => {
+            if (item.hasOwnProperty('start_date') || item.hasOwnProperty('end_date') || item.hasOwnProperty('project_type')) {
+                item.type = 'project';
+            } else {
+                item.type = 'assignment';
+            }
+        });
+        
+        updateAssignmentsDisplay(combinedData);
     } catch (error) {
-        console.error('Error fetching assignments data:', error);
+        console.error('Error fetching assignments and projects data:', error);
        
         // If unauthorized, redirect to login
         if (error.message.includes('401') || error.message.includes('Unauthorized')) {
@@ -356,59 +373,72 @@ function updateAssignmentsDisplay(assignmentsData) {
         tbody.innerHTML = `
             <tr>
                 <td colspan="5" class="px-6 py-4 text-center text-gray-400">
-                    No assignments available yet. Check back later for new assignments.
+                    No assignments or projects available yet. Check back later for new content.
                 </td>
             </tr>
         `;
         return;
     }
    
-    // Add each assignment to the table
-    assignmentsData.forEach((assignment) => {
+    // Add each assignment/project to the table
+    assignmentsData.forEach((item) => {
+        // Determine if it's an assignment or project
+        const isProject = item.type === 'project';
+        
         // Determine status and difficulty classes
         let statusClass, statusText;
-        if (assignment.status === 'completed') {
+        if (item.status === 'completed' || item.status === 'submitted') {
             statusClass = 'text-[#3fb950]';
             statusText = 'Completed';
-        } else if (assignment.due_date && new Date(assignment.due_date) < new Date()) {
+        } else if (item.due_date && new Date(item.due_date) < new Date()) {
             statusClass = 'text-[#ff7b72]';
             statusText = 'Overdue';
         } else {
             statusClass = 'text-[#8B949E]';
-            statusText = 'Not Started';
+            statusText = isProject ? 'In Progress' : 'Not Started';
         }
             
         let difficultyClass, difficultyText;
-        if (assignment.difficulty === 'hard') {
+        if (item.difficulty === 'hard' || item.difficulty === 'advanced') {
             difficultyClass = 'bg-[#A371F7]/20 text-[#A371F7]';
             difficultyText = 'Hard';
-        } else if (assignment.difficulty === 'medium') {
+        } else if (item.difficulty === 'medium' || item.difficulty === 'intermediate') {
             difficultyClass = 'bg-[#79c0ff]/20 text-[#79c0ff]';
             difficultyText = 'Medium';
         } else {
             difficultyClass = 'bg-primary/20 text-primary';
-            difficultyText = 'Easy';
+            difficultyText = item.difficulty || 'Easy';
         }
             
         // Format due date
-        const dueDate = assignment.due_date ? new Date(assignment.due_date).toLocaleDateString('en-US', {
+        const dueDate = item.due_date ? new Date(item.due_date).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
             year: 'numeric'
         }) : 'N/A';
             
-        // Create the HTML for this assignment
-        const assignmentHTML = `
-            <tr class="hover:bg-gray-800/50 transition-colors" data-assignment-id="${assignment.id}">
+        // Format title and description based on type
+        const title = item.title || item.name || 'Untitled';
+        const description = item.description || item.description || 'No description';
+        const course = item.course || item.subject || item.class_name || 'General';
+        
+        // Create the HTML for this item (assignment or project)
+        const itemHTML = `
+            <tr class="hover:bg-gray-800/50 transition-colors" data-item-id="${item.id}" data-item-type="${item.type}">
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center">
                         <div class="ml-4">
-                            <div class="text-sm font-medium text-white">${assignment.title}</div>
-                            <div class="text-sm text-gray-400">${assignment.description || 'No description'}</div>
+                            <div class="text-sm font-medium text-white">
+                                ${title}
+                                <span class="ml-2 text-xs px-2 py-1 rounded-full ${isProject ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'}">
+                                    ${isProject ? 'Project' : 'Assignment'}
+                                </span>
+                            </div>
+                            <div class="text-sm text-gray-400">${description}</div>
                         </div>
                     </div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${assignment.course || assignment.subject || 'General'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${course}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${dueDate}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm ${statusClass}">${statusText}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm">
@@ -420,10 +450,10 @@ function updateAssignmentsDisplay(assignmentsData) {
         `;
             
         // Add to table
-        tbody.insertAdjacentHTML('beforeend', assignmentHTML);
+        tbody.insertAdjacentHTML('beforeend', itemHTML);
     });
         
-    // Setup click listeners for assignment rows after rendering
+    // Setup click listeners for assignment/project rows after rendering
     setupAssignmentRowListeners();
 }
 
@@ -479,9 +509,9 @@ function updateQuizzesDisplay(quizzesData) {
 }
 
 
-// Setup click listeners for assignment rows
+// Setup click listeners for assignment/project rows
 function setupAssignmentRowListeners() {
-    console.log('Setting up assignment row listeners...');
+    console.log('Setting up assignment/project row listeners...');
     
     // Use event delegation on the table body
     const tbody = document.querySelector('tbody');
@@ -490,7 +520,7 @@ function setupAssignmentRowListeners() {
     // Add click listener to table body
     tbody.addEventListener('click', (e) => {
         // Find the closest table row
-        const row = e.target.closest('tr[data-assignment-id]');
+        const row = e.target.closest('tr[data-item-id]');
         if (!row) return;
         
         // Don't trigger if clicking on buttons or links
@@ -501,17 +531,24 @@ function setupAssignmentRowListeners() {
             return;
         }
         
-        const assignmentId = row.dataset.assignmentId;
+        const itemId = row.dataset.itemId;
+        const itemType = row.dataset.itemType;
         const titleElement = row.querySelector('.text-sm.font-medium.text-white');
-        const assignmentTitle = titleElement ? titleElement.textContent : '';
+        const itemTitle = titleElement ? titleElement.textContent : '';
         
-        console.log('Assignment row clicked:', assignmentId, assignmentTitle);
-        window.location.href = `assignment-details.html?id=${assignmentId}`;
+        console.log(`${itemType} row clicked:`, itemId, itemTitle);
+        
+        // Navigate to the appropriate details page based on item type
+        if (itemType === 'project') {
+            window.location.href = `project-details.html?id=${itemId}`;
+        } else {
+            window.location.href = `assignment-details.html?id=${itemId}`;
+        }
     });
     
     // Add hover effect to rows
     tbody.addEventListener('mouseover', (e) => {
-        const row = e.target.closest('tr[data-assignment-id]');
+        const row = e.target.closest('tr[data-item-id]');
         if (row) {
             row.style.cursor = 'pointer';
             row.style.backgroundColor = 'rgba(31, 41, 55, 0.3)';
@@ -519,7 +556,7 @@ function setupAssignmentRowListeners() {
     });
     
     tbody.addEventListener('mouseout', (e) => {
-        const row = e.target.closest('tr[data-assignment-id]');
+        const row = e.target.closest('tr[data-item-id]');
         if (row) {
             row.style.backgroundColor = '';
         }
@@ -562,6 +599,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load quizzes if the function exists
     if (typeof fetchQuizzesData === 'function') {
         fetchQuizzesData();
+    }
+   
+    // Add click functionality to create assignment button
+    const createAssignmentBtn = document.getElementById('createAssignmentBtn');
+    if (createAssignmentBtn) {
+        createAssignmentBtn.addEventListener('click', () => {
+            // Navigate to create assignment page
+            window.location.href = 'create-assignment.html';
+        });
     }
    
     // Add logout functionality

@@ -29,7 +29,7 @@ app = FastAPI(title="EduAI Platform API", version="1.0.0")
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000"],  # Allow specific origins for development
+    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000", "http://localhost:5174", "http://127.0.0.1:5174"],  # Allow specific origins for development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -44,12 +44,13 @@ app.include_router(notifications.router, prefix="", tags=["notifications"])
 app.include_router(classes.router, prefix="", tags=["classes"])
 app.include_router(quiz.router)
 
+
 @app.get("/student-api.js")
 async def get_student_api_js():
     js_content = """
 // API Request utility function
 async function apiRequest(endpoint, method = 'GET', data = null) {
-    const url = `http://localhost:8000${endpoint}`;
+    const url = `http://localhost:8001${endpoint}`;  // Updated to match the actual server port
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${localStorage.getItem('access_token')}`
@@ -145,4 +146,4 @@ async def health_check():
     return {"status": "healthy"}
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8001)  # Changed to port 8001

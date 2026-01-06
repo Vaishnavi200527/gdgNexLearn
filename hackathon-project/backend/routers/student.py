@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body, File, UploadFile, Form
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
@@ -8,6 +8,8 @@ import database
 from services import adaptive_learning, engagement_tracking, gamification, ai_content_generation
 from sqlalchemy import and_
 from auth_utils import get_current_student, get_current_user
+import os
+import uuid
 
 router = APIRouter(
     prefix="/student",
@@ -324,3 +326,92 @@ async def get_assignment_status(
         "submitted_at": assignment[3],
         "due_date": assignment[4]
     }
+
+@router.post("/projects/{project_id}/submit", status_code=status.HTTP_200_OK)
+async def submit_project(
+    project_id: int,
+    file: UploadFile = File(None),  # Make file optional for now
+    submission_notes: str = Form(None),
+    db: Session = Depends(get_db),
+    current_user: models.Users = Depends(get_current_student)
+):
+    # Submit a project
+    student_id = current_user.id
+    
+    # Check if the project exists and is assigned to the student's class
+    project = db.query(models.Projects).filter(models.Projects.id == project_id).first()
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found"
+        )
+    
+    # Check if student is enrolled in a class that has this project
+    # First find the classes the student is enrolled in
+    enrolled_class_ids = db.query(models.ClassEnrollments.class_id)\
+        .filter(models.ClassEnrollments.student_id == student_id)\
+        .subquery()
+    
+    # Then find the project assignment for those classes
+    class_project = db.query(models.ClassProjects)\
+        .filter(models.ClassProjects.class_id.in_(enrolled_class_ids))\
+        .filter(models.ClassProjects.project_id == project_id)\
+        .first()
+    
+    if not class_project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found or not assigned to student"
+        )
+    
+    # Handle file upload if provided
+    submission_url = None
+    if file:
+        if not file.content_type.startswith('application/') and not file.content_type.startswith('text/') and not file.content_type.startswith('image/'):
+            raise HTTPException(400, "Unsupported file type")
+        
+        # Create storage directory if it doesn't exist
+        STORAGE_PATH = os.path.join("storage", "project_submissions")
+        if not os.path.exists(STORAGE_PATH):
+            os.makedirs(STORAGE_PATH)
+        
+        # Generate unique filename
+        file_extension = os.path.splitext(file.filename)[1]
+        unique_filename = f"{uuid.uuid4()}{file_extension}"
+        file_path = os.path.join(STORAGE_PATH, unique_filename)
+        
+        # Save the uploaded file
+        with open(file_path, "wb") as buffer:
+            buffer.write(await file.read())
+        
+        submission_url = f"/storage/project_submissions/{unique_filename}"
+    
+    # Create the project submission
+    project_submission = models.ProjectSubmissions(
+        project_id=project_id,
+        student_id=student_id,
+        class_id=class_project.class_id,  # Use the class ID from the association
+        submission_url=submission_url,
+        submission_notes=submission_notes,
+        status=schemas.AssignmentStatus.SUBMITTED
+    )
+    
+    db.add(project_submission)
+    db.commit()
+    db.refresh(project_submission)
+    
+    # Log engagement
+    engagement_log = models.EngagementLogs(
+        student_id=student_id,
+        engagement_type=schemas.EngagementType.PROJECT,
+        value=1,  # Count as one engagement
+        metadata_json=f"{{'project_id': {project_id}, 'action': 'submission'}}"
+    )
+    db.add(engagement_log)
+    
+    # Update student progress, XP, streaks, badges
+    gamification.update_after_submission(student_id, project_id, db, submission_type='project')
+    
+    db.commit()
+    
+    return {"message": "Project submitted successfully", "project_id": project_id}

@@ -364,11 +364,19 @@
                         <span class="material-symbols-outlined text-[#9cb2ba]">calendar_today</span>
                         <span class="text-[#9cb2ba] text-sm">N/A</span>
                     </div>
-                    <button class="text-primary text-sm font-bold hover:underline">
+                    <button class="view-details-btn text-primary text-sm font-bold hover:underline" data-project-id="${project.id}">
                         View Details
                     </button>
                 </div>
             `;
+            
+            // Add event listener to the button
+            const viewDetailsBtn = projectCard.querySelector('.view-details-btn');
+            viewDetailsBtn.addEventListener('click', () => {
+                // Navigate to project submissions page
+                window.location.href = `project-submissions.html?classId=${classId}&projectId=${project.id}`;
+            });
+            
             container.appendChild(projectCard);
         });
     }

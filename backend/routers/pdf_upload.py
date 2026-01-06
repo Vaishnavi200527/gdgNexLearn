@@ -158,13 +158,8 @@ async def process_pdf(
 
     try:
         # Process PDF for text-based learning with detailed concept explanations
-<<<<<<< HEAD
-        result = process_pdf_for_text_learning(content)
-
-=======
         result = process_pdf_for_adaptive_learning(content)
         
->>>>>>> 31d1d287acc7d6db0c326025d7fac1f9462033ea
         # Extract concepts from the result
         concepts_data = result.get("concepts", [])
 
@@ -285,13 +280,8 @@ async def process_pdf_detailed(
 
     try:
         # Process PDF for text-based learning with detailed concept explanations
-<<<<<<< HEAD
-        result = process_pdf_for_text_learning(content)
-
-=======
         result = process_pdf_for_adaptive_learning(content)
         
->>>>>>> 31d1d287acc7d6db0c326025d7fac1f9462033ea
         # Process concepts and store detailed explanations
         detailed_concepts = []
         for concept_data in result.get("concepts", []):

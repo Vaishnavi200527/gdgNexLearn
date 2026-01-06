@@ -31,9 +31,13 @@ app = FastAPI(title="AI-Powered Adaptive Learning Platform", lifespan=lifespan)
 origins = [
     "http://localhost",
     "http://localhost:5173",  # Origin from the error message
+    "http://localhost:5174",  # Vite dev server port
     "http://localhost:8080",  # Common dev server port
     "http://127.0.0.1:5500",  # VS Code Live Server
     "http://127.0.0.1:5173",  # Vite local IP
+    "http://127.0.0.1:5174",  # Vite dev server IP
+    "http://localhost:5173",  # Added for Vite frontend
+    "http://localhost:5174",  # Added for Vite frontend
 ]
 
 # Add CORS middleware

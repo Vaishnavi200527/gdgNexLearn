@@ -205,6 +205,16 @@ export const studentAPI = {
 
   getProjects: () => apiRequest('/student/projects', {}, 'projects'),
 
+  getProjectById: (projectId) => apiRequest(`/student/projects/${projectId}`, {}, `project_${projectId}`),
+
+  submitProject: (projectId, submissionData) => {
+    // For file uploads, we need to let the browser handle the Content-Type header
+    return apiRequest(`/student/projects/${projectId}/submit`, {
+      method: 'POST',
+      body: submissionData,  // This will be FormData
+    }, null, true);  // Skip adding content-type header for FormData
+  },
+
   getLeaderboard: () => apiRequest('/student/leaderboard', {}, 'leaderboard'),
 
   getBadges: () => apiRequest('/student/badges', {}, 'badges'),
@@ -324,7 +334,22 @@ export const teacherAPI = {
     body: JSON.stringify(assignmentData),
   }),
   
+  getClassAssignments: (classId) => apiRequest(`/classes/${classId}/assignments`),
+  
   getClassProjects: (classId) => apiRequest(`/classes/${classId}/projects`),
   
-  getClassAssignments: (classId) => apiRequest(`/classes/${classId}/assignments`),
+  getProjectSubmissions: (projectId, classId = null) => {
+    let url = `/teacher/projects/${projectId}/submissions`;
+    if (classId) {
+      url += `?class_id=${classId}`;
+    }
+    return apiRequest(url);
+  },
+  
+  getClassProjectSubmissions: (classId, projectId) => apiRequest(`/teacher/classes/${classId}/projects/${projectId}/submissions`),
+  
+  gradeProjectSubmission: (submissionId, gradeData) => apiRequest(`/teacher/projects/submissions/${submissionId}/grade`, {
+    method: 'PUT',
+    body: JSON.stringify(gradeData),
+  }),
 };

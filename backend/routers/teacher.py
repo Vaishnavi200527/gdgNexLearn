@@ -297,3 +297,88 @@ async def get_assignment_submissions(
     
     submissions = query.all()
     return submissions
+
+# Project submission endpoints for teachers
+@router.get("/projects/{project_id}/submissions", response_model=List[schemas.ProjectSubmissionResponse])
+async def get_project_submissions(
+    project_id: int,
+    class_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: models.Users = Depends(get_current_teacher)
+):
+    """
+    Get all submissions for a specific project
+    Teachers can view all student submissions for projects they created or assigned
+    """
+    query = db.query(models.ProjectSubmissions).filter(
+        models.ProjectSubmissions.project_id == project_id
+    )
+    
+    if class_id:
+        # Filter by specific class
+        query = query.filter(models.ProjectSubmissions.class_id == class_id)
+    
+    # Verify teacher has access to this project/class
+    project = db.query(models.Projects).filter(models.Projects.id == project_id).first()
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found"
+        )
+    
+    submissions = query.all()
+    return submissions
+
+@router.get("/classes/{class_id}/projects/{project_id}/submissions", response_model=List[schemas.ProjectSubmissionResponse])
+async def get_class_project_submissions(
+    class_id: int,
+    project_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.Users = Depends(get_current_teacher)
+):
+    """
+    Get all submissions for a specific project in a specific class
+    """
+    # Verify teacher has access to this class
+    class_obj = db.query(models.Classes).filter(models.Classes.id == class_id).first()
+    if not class_obj or class_obj.teacher_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied to this class"
+        )
+    
+    submissions = db.query(models.ProjectSubmissions).filter(
+        models.ProjectSubmissions.project_id == project_id,
+        models.ProjectSubmissions.class_id == class_id
+    ).all()
+    
+    return submissions
+
+@router.put("/projects/submissions/{submission_id}/grade")
+async def grade_project_submission(
+    submission_id: int,
+    grade_data: dict,
+    db: Session = Depends(get_db),
+    current_user: models.Users = Depends(get_current_teacher)
+):
+    """
+    Grade a project submission and update status to GRADED
+    """
+    submission = db.query(models.ProjectSubmissions).filter(
+        models.ProjectSubmissions.id == submission_id
+    ).first()
+    
+    if not submission:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Submission not found"
+        )
+    
+    # Update submission with grade and status
+    submission.score = grade_data.get("score")
+    submission.status = schemas.AssignmentStatus.GRADED
+    
+    db.commit()
+    db.refresh(submission)
+    
+    return {"message": "Project graded successfully", "submission": submission}

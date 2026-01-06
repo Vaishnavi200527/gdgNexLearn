@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Project Submissions - AMEP</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0df2df",
+                        "background-light": "#f5f8f8",
+                        "background-dark": "#102221",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="font-display bg-[#0A0F1E] text-white">
+<div class="min-h-screen bg-[#0A0F1E]">
+    <!-- Header -->
+    <header class="border-b border-indigo-500/20 backdrop-blur-sm bg-[#0F172A]/30 w-full">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center">
+                    <img src="../assets/logo.png" alt="AMEP Logo" class="h-8 w-8 mr-2" />
+                    <span class="text-xl font-bold tracking-wide bg-gradient-to-r from-blue-500 via-indigo-500 to-teal-500 bg-clip-text text-transparent">
+                        AMEP
+                    </span>
+                </div>
+                <nav class="hidden md:flex space-x-6">
+                    <a href="teacher-dashboard.html" class="text-gray-300 hover:text-white transition-colors">Dashboard</a>
+                    <a href="classes.html" class="text-gray-300 hover:text-white transition-colors">Classes</a>
+                    <a href="create-project.html" class="text-gray-300 hover:text-white transition-colors">Create Project</a>
+                </nav>
+                <div class="flex items-center space-x-4">
+                    <button id="mobile-menu-toggle" class="md:hidden text-gray-400 hover:text-white focus:outline-none">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                    <span class="text-gray-300 hidden sm:inline" id="user-name">Teacher</span>
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center">
+                        <span class="font-bold" id="user-initials">T</span>
+                    </div>
+                    <a href="#" id="desktop-logout-btn" class="hidden md:block text-gray-300 hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Navigation Overlay -->
+    <div id="mobile-nav-overlay" class="fixed inset-0 bg-black/80 z-50 hidden md:hidden">
+        <div class="flex flex-col h-full">
+            <div class="flex justify-between items-center p-6 border-b border-gray-800">
+                <div class="flex items-center">
+                    <img src="../assets/logo.png" alt="AMEP Logo" class="h-8 w-8 mr-2" />
+                    <span class="text-xl font-bold tracking-wide bg-gradient-to-r from-blue-500 via-indigo-500 to-teal-500 bg-clip-text text-transparent">
+                        AMEP
+                    </span>
+                </div>
+                <button id="close-mobile-nav" class="text-gray-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <nav class="flex-col p-6 space-y-6">
+                <a href="teacher-dashboard.html" class="text-gray-400 hover:text-white text-lg py-2 transition-colors">Dashboard</a>
+                <a href="classes.html" class="text-gray-400 hover:text-white text-lg py-2 transition-colors">Classes</a>
+                <a href="create-project.html" class="text-gray-400 hover:text-white text-lg py-2 transition-colors">Create Project</a>
+                <div class="border-t border-gray-800 pt-6 mt-6">
+                    <a href="#" class="text-gray-400 hover:text-white text-lg py-2 transition-colors">Settings</a>
+                    <a href="#" id="logout-btn" class="text-gray-400 hover:text-white text-lg py-2 transition-colors">Logout</a>
+                </div>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="container mx-auto px-6 py-8">
+        <div class="mb-8">
+            <h1 class="text-4xl font-black leading-tight tracking-[-0.033em] text-white" id="project-title">Project Submissions</h1>
+            <p class="text-gray-400 text-base font-normal leading-normal mt-2" id="class-name">Loading...</p>
+        </div>
+
+        <div class="bg-[#111618] border border-slate-800 rounded-xl p-6 mb-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-bold text-white">Submission Overview</h2>
+                <div class="flex items-center space-x-4">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-green-400" id="submitted-count">0</div>
+                        <div class="text-sm text-gray-400">Submitted</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-red-400" id="pending-count">0</div>
+                        <div class="text-sm text-gray-400">Pending</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-[#111618] border border-slate-800 rounded-xl overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-[#0f1718]">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Student</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Submitted At</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="submissions-table-body" class="divide-y divide-slate-800">
+                        <!-- Dynamic content will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { teacherAPI } from '../src/services/api.js';
+    import { logout } from '../src/services/auth.js';
+    
+    // Get URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const classId = urlParams.get('classId');
+    const projectId = urlParams.get('projectId');
+    
+    // Add logout functionality
+    document.getElementById('desktop-logout-btn').addEventListener('click', function(e) {
+        e.preventDefault();
+        if (confirm('Are you sure you want to logout?')) {
+            logout();
+        }
+    });
+    
+    // Update user name display
+    function updateUserNameDisplay() {
+        // Get user name from localStorage
+        const userName = localStorage.getItem('userName') || 'Teacher';
+        
+        // Update user name in header
+        const userNameElement = document.getElementById('user-name');
+        if (userNameElement) {
+            userNameElement.textContent = userName;
+        }
+        
+        // Update user initials
+        const userInitialsElement = document.getElementById('user-initials');
+        if (userInitialsElement) {
+            const names = userName.split(' ');
+            let initials = '';
+            if (names.length > 1) {
+                initials = names[0].charAt(0) + names[names.length - 1].charAt(0);
+            } else {
+                initials = names[0].charAt(0) + names[0].charAt(1) || 'T';
+            }
+            userInitialsElement.textContent = initials.toUpperCase();
+        }
+    }
+    
+    // Mobile navigation toggle functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+        const closeMobileNav = document.getElementById('close-mobile-nav');
+        const mobileNavOverlay = document.getElementById('mobile-nav-overlay');
+        
+        if (mobileMenuToggle) {
+            mobileMenuToggle.addEventListener('click', function() {
+                mobileNavOverlay.classList.remove('hidden');
+            });
+        }
+        
+        if (closeMobileNav) {
+            closeMobileNav.addEventListener('click', function() {
+                mobileNavOverlay.classList.add('hidden');
+            });
+        }
+        
+        // Close mobile menu when clicking on a link
+        const mobileLinks = mobileNavOverlay.querySelectorAll('a');
+        mobileLinks.forEach(link => {
+            link.addEventListener('click', function() {
+                mobileNavOverlay.classList.add('hidden');
+            });
+        });
+        
+        // Add logout functionality for mobile
+        document.getElementById('logout-btn').addEventListener('click', function(e) {
+            e.preventDefault();
+            if (confirm('Are you sure you want to logout?')) {
+                logout();
+            }
+        });
+        
+        updateUserNameDisplay();
+        
+        // Load project submissions
+        if (classId && projectId) {
+            loadProjectSubmissions(classId, projectId);
+        } else {
+            console.error('Missing classId or projectId in URL parameters');
+            document.getElementById('submissions-table-body').innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-red-400">Missing required parameters</td></tr>';
+        }
+    });
+
+    async function loadProjectSubmissions(classId, projectId) {
+        try {
+            // Get class info
+            const classInfo = await teacherAPI.getClassById(classId);
+            document.getElementById('class-name').textContent = `Class: ${classInfo.name}`;
+            
+            // Get project info
+            // For now, we'll use a placeholder project title
+            document.getElementById('project-title').textContent = 'Project Submissions';
+            
+            // Get all students in the class
+            const students = await teacherAPI.getClassStudents(classId);
+            
+            // Get project submissions for this class
+            // We need to fetch submissions for this project in this class
+            // For now, we'll need to create a function to get project submissions
+            // Since there's no specific endpoint, we'll use class assignments endpoint as reference
+            // and adapt it for projects
+            
+            // For now, let's create a mock implementation to show the structure
+            // We'll need to implement this in the backend
+            const submissions = await getProjectSubmissions(classId, projectId);
+            renderSubmissionsTable(students, submissions);
+            
+        } catch (error) {
+            console.error('Error loading project submissions:', error);
+            document.getElementById('submissions-table-body').innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-red-400">Error loading submissions: ' + error.message + '</td></tr>';
+        }
+    }
+    
+    async function getProjectSubmissions(classId, projectId) {
+        try {
+            // Use the correct teacherAPI endpoint for class project submissions
+            return await teacherAPI.getClassProjectSubmissions(classId, projectId);
+        } catch (error) {
+            console.error('Error fetching project submissions:', error);
+            return [];
+        }
+    }
+    
+    function renderSubmissionsTable(students, submissions) {
+        const tableBody = document.getElementById('submissions-table-body');
+        let submittedCount = 0;
+        let pendingCount = 0;
+        
+        // Create a map of submission data by student ID
+        const submissionMap = {};
+        submissions.forEach(sub => {
+            submissionMap[sub.student_id] = sub;
+        });
+        
+        // Render each student row
+        students.forEach(student => {
+            const submission = submissionMap[student.id];
+            const hasSubmitted = submission && (submission.status === 'completed' || submission.status === 'graded');
+            
+            if (hasSubmitted) {
+                submittedCount++;
+            } else {
+                pendingCount++;
+            }
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 h-10 w-10">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center">
+                                <span class="font-bold">${student.name.charAt(0)}</span>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <div class="text-sm font-medium text-white">${student.name}</div>
+                            <div class="text-sm text-gray-400">${student.email}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${hasSubmitted ? 'bg-green-900 text-green-200' : 'bg-red-900 text-red-200'}">
+                        ${hasSubmitted ? 'Submitted' : 'Pending'}
+                    </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                    ${hasSubmitted ? (submission.submitted_at ? new Date(submission.submitted_at).toLocaleString() : 'N/A') : 'N/A'}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    ${hasSubmitted ? `
+                        <button onclick="viewSubmission(${submission.student_id}, '${submission.submission_url || '#'}')" class="text-primary hover:text-primary/80 mr-3">
+                            View Submission
+                        </button>
+                        ${submission.submission_url ? `<a href="http://localhost:8000${submission.submission_url}" target="_blank" class="text-blue-400 hover:text-blue-300">
+                            Download
+                        </a>` : `<span class="text-gray-500">No file</span>`}
+                    ` : `
+                        <span class="text-gray-500">No submission</span>
+                    `}
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+        
+        // Update counts
+        document.getElementById('submitted-count').textContent = submittedCount;
+        document.getElementById('pending-count').textContent = pendingCount;
+    }
+    
+    // Function to handle viewing a submission
+    window.viewSubmission = function(studentId, submissionUrl) {
+        if (submissionUrl && submissionUrl !== '#') {
+            // Open submission in new tab if URL exists
+            window.open(submissionUrl, '_blank');
+        } else {
+            // Alert if no submission URL
+            alert(`No submission available for student ID: ${studentId}`);
+        }
+    };
+</script>
+</body>
+</html>

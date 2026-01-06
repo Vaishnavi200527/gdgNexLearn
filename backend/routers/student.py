@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Body
+from fastapi import APIRouter, Depends, HTTPException, status, Body, File, UploadFile, Form
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
@@ -15,6 +15,7 @@ import pdfplumber
 import io
 import os
 import json
+import uuid
 from services.ai_content_generation import call_gemini_api
 import logging
 
@@ -282,11 +283,6 @@ def get_mastery(
 ):
     # Get student mastery records
     student_id = current_user.id
-<<<<<<< HEAD
-    mastery_records = db.query(models.MasteryScores).filter(
-        models.MasteryScores.student_id == student_id
-    ).all()
-=======
     
     # Eager load the concept relationship to avoid N+1 queries
     mastery_records = db.query(models.StudentMastery)\
@@ -294,19 +290,13 @@ def get_mastery(
         .filter(models.StudentMastery.student_id == student_id)\
         .all()
     
->>>>>>> 31d1d287acc7d6db0c326025d7fac1f9462033ea
     
     results = []
     for record in mastery_records:
         result = {
             "concept_id": record.concept_id,
-<<<<<<< HEAD
-            "concept_name": record.concept.concept_name if record.concept else "Unknown",
-            "mastery_score": record.mastery_score,
-=======
             "concept_name": record.concept.name if record.concept else "Unknown",
             "mastery_score": float(record.mastery_score),  # Ensure it's a float
->>>>>>> 31d1d287acc7d6db0c326025d7fac1f9462033ea
             "level": int(record.mastery_score / 20) + 1
         }
         results.append(result)
@@ -509,13 +499,137 @@ def get_projects(
 ):
     # Get projects that the student is part of through class enrollment
     student_id = current_user.id
-    student_projects = db.query(models.Projects)\
-        .join(models.ClassProjects)\
-        .join(models.Classes)\
-        .join(models.ClassEnrollments)\
-        .filter(models.ClassEnrollments.student_id == student_id)\
-        .all()
+    student_projects = db.query(models.Projects).join(
+        models.ClassProjects, models.Projects.id == models.ClassProjects.project_id
+    ).join(
+        models.Classes, models.ClassProjects.class_id == models.Classes.id
+    ).join(
+        models.ClassEnrollments, models.Classes.id == models.ClassEnrollments.class_id
+    ).filter(
+        models.ClassEnrollments.student_id == student_id
+    ).all()
     return student_projects
+
+
+@router.get("/projects/{project_id}", response_model=schemas.ProjectResponse)
+def get_project_by_id(
+    project_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.Users = Depends(get_current_student)
+):
+    # Get a specific project by ID - use the exact same logic as get_projects
+    student_id = current_user.id
+    
+    # Use explicit join conditions to avoid ambiguity
+    project = db.query(models.Projects).join(
+        models.ClassProjects, models.Projects.id == models.ClassProjects.project_id
+    ).join(
+        models.Classes, models.ClassProjects.class_id == models.Classes.id
+    ).join(
+        models.ClassEnrollments, models.Classes.id == models.ClassEnrollments.class_id
+    ).filter(
+        models.ClassEnrollments.student_id == student_id
+    ).filter(
+        models.Projects.id == project_id
+    ).first()
+    
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found or not assigned to student"
+        )
+    
+    return project
+
+
+@router.post("/projects/{project_id}/submit", status_code=status.HTTP_200_OK)
+async def submit_project(
+    project_id: int,
+    file: UploadFile = File(None),  # Make file optional for now
+    submission_notes: str = Form(None),
+    db: Session = Depends(get_db),
+    current_user: models.Users = Depends(get_current_student)
+):
+    # Submit a project
+    student_id = current_user.id
+    
+    # Check if the project exists and is assigned to the student's class
+    project = db.query(models.Projects).filter(models.Projects.id == project_id).first()
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found"
+        )
+    
+    # Check if student is enrolled in a class that has this project
+    # First find the classes the student is enrolled in
+    enrolled_class_ids = db.query(models.ClassEnrollments.class_id)\
+        .filter(models.ClassEnrollments.student_id == student_id)\
+        .subquery()
+    
+    # Then find the project assignment for those classes
+    class_project = db.query(models.ClassProjects)\
+        .filter(models.ClassProjects.class_id.in_(enrolled_class_ids))\
+        .filter(models.ClassProjects.project_id == project_id)\
+        .first()
+    
+    if not class_project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found or not assigned to student"
+        )
+    
+    # Handle file upload if provided
+    submission_url = None
+    if file:
+        if not file.content_type.startswith('application/') and not file.content_type.startswith('text/') and not file.content_type.startswith('image/'):
+            raise HTTPException(400, "Unsupported file type")
+        
+        # Create storage directory if it doesn't exist
+        STORAGE_PATH = os.path.join("storage", "project_submissions")
+        if not os.path.exists(STORAGE_PATH):
+            os.makedirs(STORAGE_PATH)
+        
+        # Generate unique filename
+        file_extension = os.path.splitext(file.filename)[1]
+        unique_filename = f"{uuid.uuid4()}{file_extension}"
+        file_path = os.path.join(STORAGE_PATH, unique_filename)
+        
+        # Save the uploaded file
+        with open(file_path, "wb") as buffer:
+            buffer.write(await file.read())
+        
+        submission_url = f"/storage/project_submissions/{unique_filename}"
+    
+    # Create the project submission with COMPLETED status
+    project_submission = models.ProjectSubmissions(
+        project_id=project_id,
+        student_id=student_id,
+        class_id=class_project.class_id,  # Use the class ID from the association
+        submission_url=submission_url,
+        submission_notes=submission_notes,
+        status=schemas.AssignmentStatus.COMPLETED  # Mark as completed after submission
+    )
+    
+    db.add(project_submission)
+    db.commit()
+    db.refresh(project_submission)
+    
+    # Log engagement
+    engagement_log = models.EngagementLogs(
+        student_id=student_id,
+        engagement_type=models.EngagementType.PROJECT_WORK,
+        value=1,  # Count as one engagement
+        metadata_json=f"{{'project_id': {project_id}, 'action': 'submission'}}"
+    )
+    db.add(engagement_log)
+    
+    # Update student progress, XP, streaks, badges
+    gamification.update_after_submission(student_id, project_id, db, submission_type='project')
+    
+    db.commit()
+    
+    return {"message": "Project submitted successfully", "project_id": project_id}
 
 @router.get("/leaderboard", response_model=List[schemas.LeaderboardEntry])
 def get_leaderboard(db: Session = Depends(get_db)):
@@ -713,65 +827,13 @@ async def get_assignment_status(
         "due_date": assignment[4]
     }
 
-<<<<<<< HEAD
-@router.get("/homework/adaptive", response_model=List[schemas.AdaptiveHomeworkResponse])
-def get_adaptive_homework(
-=======
 @router.get("/assignments/{assignment_id}/quiz")
 async def get_assignment_quiz(
     assignment_id: int,
->>>>>>> 31d1d287acc7d6db0c326025d7fac1f9462033ea
     db: Session = Depends(get_db),
     current_user: models.Users = Depends(get_current_student)
 ):
     """
-<<<<<<< HEAD
-    Generate adaptive homework based on student's mastery levels.
-    Returns questions from concepts where mastery is below 80%.
-    """
-    student_id = current_user.id
-
-    # Get student's mastery scores
-    mastery_records = db.query(models.MasteryScores).filter(
-        models.MasteryScores.student_id == student_id
-    ).all()
-
-    # Find concepts where mastery is below 80%
-    weak_concepts = []
-    for record in mastery_records:
-        if record.mastery_score < 80:
-            weak_concepts.append(record.concept_id)
-
-    # If no weak concepts, return empty list (student has mastered everything)
-    if not weak_concepts:
-        return []
-
-    # Get questions from weak concepts, prioritizing based on mastery level
-    # Lower mastery = higher priority
-    concept_priorities = {record.concept_id: record.mastery_score for record in mastery_records}
-    weak_concepts.sort(key=lambda x: concept_priorities.get(x, 0))  # Sort by lowest mastery first
-
-    homework_questions = []
-    questions_per_concept = 3  # Limit questions per concept
-
-    for concept_id in weak_concepts:
-        # Get questions for this concept
-        questions = db.query(models.Question).filter(
-            models.Question.concept_id == concept_id
-        ).limit(questions_per_concept).all()
-
-        for question in questions:
-            homework_questions.append({
-                "question_id": question.id,
-                "concept_id": concept_id,
-                "concept_name": question.concept.concept_name if question.concept else "Unknown",
-                "question_text": question.question_text,
-                "difficulty": question.difficulty,
-                "mastery_level": concept_priorities.get(concept_id, 0)
-            })
-
-    return homework_questions
-=======
     Generate a personalized quiz for the assignment based on student's mastery level
     """
     student_id = current_user.id
@@ -979,4 +1041,3 @@ async def submit_quiz_answers(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An error occurred while processing your submission. Please try again."
         )
->>>>>>> 31d1d287acc7d6db0c326025d7fac1f9462033ea

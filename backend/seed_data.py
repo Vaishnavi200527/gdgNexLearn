@@ -14,36 +14,6 @@ def seed_database():
     
     db: Session = database.SessionLocal()
     
-<<<<<<< HEAD
-    # Always reseed for development - clear existing data first
-    print("Clearing existing data and reseeding database...")
-    
-    # Clear existing data in correct order (respecting foreign keys)
-    db.query(models.StudentQuizzes).delete()
-    db.query(models.ClassQuizzes).delete()
-    db.query(models.QuizQuestion).delete()
-    db.query(models.Quiz).delete()
-    db.query(models.ClassProjects).delete()
-    db.query(models.Notification).delete()
-    db.query(models.ClassAssignments).delete()
-    db.query(models.ClassEnrollments).delete()
-    db.query(models.Classes).delete()
-    db.query(models.TeacherInterventions).delete()
-    db.query(models.StudentBadges).delete()
-    db.query(models.StudentStreaks).delete()
-    db.query(models.StudentXP).delete()
-    db.query(models.SoftSkillScores).delete()
-    db.query(models.EngagementLogs).delete()
-    db.query(models.ProjectTeams).delete()
-    db.query(models.Projects).delete()
-    db.query(models.StudentAssignments).delete()
-    db.query(models.Assignments).delete()
-    db.query(models.Attempt).delete()
-    db.query(models.Question).delete()
-    db.query(models.MasteryScores).delete()
-    db.query(models.Concept).delete()
-    db.query(models.Users).delete()
-=======
     # Check if users already exist to avoid duplication
     existing_users = db.query(models.Users).count()
     if existing_users > 0:
@@ -63,9 +33,8 @@ def seed_database():
         db.query(models.Projects).delete()
         db.query(models.StudentAssignments).delete()
         db.query(models.Assignments).delete()
-        db.query(models.ConceptProgress).delete()
+        db.query(models.Concept).delete()
         db.query(models.StudentMastery).delete()
-        db.query(models.Concepts).delete()
         db.query(models.Users).delete()
     except Exception as e:
         # If tables don't exist yet, create them
@@ -73,7 +42,6 @@ def seed_database():
         Base.metadata.create_all(bind=engine)
         db.close()
         db = database.SessionLocal()  # Get a new session
->>>>>>> d1b0e9665ef58abcf16ab9b737febfe080e00a82
     
     # Create sample users (students and teachers)
     students = [
@@ -104,11 +72,11 @@ def seed_database():
     
     # Create sample concepts
     concepts = [
-        models.Concept(subject="Python", concept_name="Python Basics"),
-        models.Concept(subject="Python", concept_name="Data Structures"),
-        models.Concept(subject="Computer Science", concept_name="Algorithms"),
-        models.Concept(subject="Python", concept_name="Object-Oriented Programming"),
-        models.Concept(subject="Database", concept_name="Database Design")
+        models.Concept(subject="Python", concept_name="Python Basics", description="Fundamental concepts of Python programming including variables, data types, and basic syntax"),
+        models.Concept(subject="Python", concept_name="Data Structures", description="Understanding and using Python data structures like lists, tuples, dictionaries, and sets"),
+        models.Concept(subject="Computer Science", concept_name="Algorithms", description="Design and analysis of algorithms for solving computational problems"),
+        models.Concept(subject="Python", concept_name="Object-Oriented Programming", description="Principles of OOP including classes, objects, inheritance, and polymorphism"),
+        models.Concept(subject="Database", concept_name="Database Design", description="Designing and implementing relational database schemas")
     ]
     
     # Add concepts to database
@@ -175,9 +143,21 @@ def seed_database():
     # Create sample projects
     projects = [
         models.Projects(title="EcoTracker App", description="Build an application to track and reduce personal carbon footprint",
-                       teacher_id=teachers[0].id, start_date=datetime.now(), end_date=datetime.now() + timedelta(days=14)),
+                       teacher_id=teachers[0].id, start_date=datetime.now(), end_date=datetime.now() + timedelta(days=14),
+                       evaluation_rubric=[
+                           {"criterion": "Code Quality", "weight": 30},
+                           {"criterion": "User Interface", "weight": 25},
+                           {"criterion": "Functionality", "weight": 30},
+                           {"criterion": "Documentation", "weight": 15}
+                       ]),
         models.Projects(title="Community Bulletin Board", description="Create a digital platform for community announcements and events",
-                       teacher_id=teachers[1].id, start_date=datetime.now(), end_date=datetime.now() + timedelta(days=21))
+                       teacher_id=teachers[1].id, start_date=datetime.now(), end_date=datetime.now() + timedelta(days=21),
+                       evaluation_rubric=[
+                           {"criterion": "Design", "weight": 25},
+                           {"criterion": "Database Implementation", "weight": 30},
+                           {"criterion": "User Experience", "weight": 25},
+                           {"criterion": "Testing", "weight": 20}
+                       ])
     ]
     
     # Add projects to database
@@ -202,6 +182,47 @@ def seed_database():
     # Add project teams to database
     for pt in project_teams:
         db.add(pt)
+    db.commit()
+    
+    # Create sample classes
+    classes = [
+        models.Classes(name="Python Programming 101", description="Introduction to Python programming concepts", teacher_id=teachers[0].id),
+        models.Classes(name="Web Development Basics", description="Learn the fundamentals of web development", teacher_id=teachers[1].id)
+    ]
+    
+    # Add classes to database
+    for class_obj in classes:
+        db.add(class_obj)
+    db.commit()
+    
+    # Refresh to get IDs
+    for class_obj in classes:
+        db.refresh(class_obj)
+    
+    # Create class enrollments
+    class_enrollments = [
+        models.ClassEnrollments(class_id=classes[0].id, student_id=students[0].id),
+        models.ClassEnrollments(class_id=classes[0].id, student_id=students[1].id),
+        models.ClassEnrollments(class_id=classes[0].id, student_id=students[2].id),
+        models.ClassEnrollments(class_id=classes[1].id, student_id=students[2].id),
+        models.ClassEnrollments(class_id=classes[1].id, student_id=students[3].id),
+        models.ClassEnrollments(class_id=classes[1].id, student_id=students[4].id)
+    ]
+    
+    # Add class enrollments to database
+    for enrollment in class_enrollments:
+        db.add(enrollment)
+    db.commit()
+    
+    # Assign projects to classes
+    class_projects = [
+        models.ClassProjects(class_id=classes[0].id, project_id=projects[0].id),  # EcoTracker App in Python class
+        models.ClassProjects(class_id=classes[1].id, project_id=projects[1].id)   # Community Board in Web Dev class
+    ]
+    
+    # Add class projects to database
+    for cp in class_projects:
+        db.add(cp)
     db.commit()
     
     # Create sample engagement logs

@@ -228,3 +228,72 @@ def get_class_assignments(class_id: int, db: Session = Depends(get_db)):
     ).all()
     
     return assignments
+
+@router.get("/{class_id}/projects/{project_id}/submissions")
+def get_project_submissions(class_id: int, project_id: int, db: Session = Depends(get_db)):
+    # Get all submissions for a specific project in a specific class
+    # First, verify the project is assigned to the class
+    class_project = db.query(models.ClassProjects).filter(
+        models.ClassProjects.class_id == class_id,
+        models.ClassProjects.project_id == project_id
+    ).first()
+    
+    if not class_project:
+        raise HTTPException(status_code=404, detail="Project not assigned to this class")
+    
+    # Get all students in the class
+    class_enrollments = db.query(models.ClassEnrollments).filter(
+        models.ClassEnrollments.class_id == class_id
+    ).all()
+    
+    student_ids = [enrollment.student_id for enrollment in class_enrollments]
+    
+    # Get project submissions for this project in this class
+    project_submissions = db.query(models.ProjectSubmissions).filter(
+        models.ProjectSubmissions.project_id == project_id,
+        models.ProjectSubmissions.class_id == class_id,
+        models.ProjectSubmissions.student_id.in_(student_ids)
+    ).all()
+    
+    # Get student information
+    students = db.query(models.Users).filter(
+        models.Users.id.in_(student_ids)
+    ).all()
+    
+    # Create a mapping of student data
+    student_map = {s.id: s for s in students}
+    
+    # Format the response
+    submissions = []
+    for ps in project_submissions:
+        student = student_map.get(ps.student_id)
+        if student:
+            submissions.append({
+                "student_id": ps.student_id,
+                "student_name": student.name,
+                "student_email": student.email,
+                "submission_url": ps.submission_url,
+                "submitted_at": ps.submitted_at,
+                "status": ps.status.value if hasattr(ps.status, "value") else ps.status,
+                "score": ps.score,
+                "project_id": ps.project_id
+            })
+    
+    # For students who haven't submitted, mark as pending
+    submitted_student_ids = {sub["student_id"] for sub in submissions}
+    for student_id in student_ids:
+        if student_id not in submitted_student_ids:
+            student = student_map.get(student_id)
+            if student:
+                submissions.append({
+                    "student_id": student_id,
+                    "student_name": student.name,
+                    "student_email": student.email,
+                    "submission_url": None,
+                    "submitted_at": None,
+                    "status": "pending",
+                    "score": None,
+                    "project_id": project_id
+                })
+    
+    return submissions

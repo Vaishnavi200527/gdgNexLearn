@@ -20,6 +20,7 @@ class EngagementType(str, enum.Enum):
 class AssignmentStatus(str, enum.Enum):
     ASSIGNED = "assigned"
     SUBMITTED = "submitted"
+    COMPLETED = "completed"
     GRADED = "graded"
 
 class Users(Base):
@@ -33,6 +34,7 @@ class Users(Base):
     
     # Relationships
     mastery_scores = relationship("MasteryScores", back_populates="student")
+    student_mastery_scores = relationship("StudentMastery", back_populates="student")
     student_assignments = relationship("StudentAssignments", back_populates="student")
     project_teams = relationship("ProjectTeams", back_populates="student")
     engagement_logs = relationship("EngagementLogs", back_populates="student")
@@ -64,10 +66,10 @@ class Concept(Base):
     
     # Relationships
     mastery_scores = relationship("MasteryScores", back_populates="concept")
+    student_mastery_scores = relationship("StudentMastery", back_populates="concept")
     questions = relationship("Question", back_populates="concept")
 
-# Alias Concepts to Concept to fix typo in PDF upload module
-Concepts = Concept
+
 
 class MasteryScores(Base):
     __tablename__ = "mastery_scores"
@@ -79,6 +81,19 @@ class MasteryScores(Base):
     # Relationships
     student = relationship("Users", back_populates="mastery_scores")
     concept = relationship("Concept", back_populates="mastery_scores")
+
+class StudentMastery(Base):
+    __tablename__ = "student_mastery"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(Integer, ForeignKey("users.id"))
+    concept_id = Column(Integer, ForeignKey("concepts.id"))
+    mastery_score = Column(Float, default=0.0)  # 0-100
+    
+    # Relationships
+    student = relationship("Users", back_populates="student_mastery_scores")
+    concept = relationship("Concept", back_populates="student_mastery_scores")
+
 
 class Question(Base):
     __tablename__ = "questions"
@@ -141,6 +156,7 @@ class Projects(Base):
     teacher_id = Column(Integer, ForeignKey("users.id"))
     start_date = Column(DateTime, default=datetime.utcnow)
     end_date = Column(DateTime)
+    evaluation_rubric = Column(JSON, default=list)  # Store rubric as JSON
     
     # Relationships
     teacher = relationship("Users", foreign_keys=[teacher_id])
@@ -380,7 +396,7 @@ class ConceptExplanations(Base):
     updated_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationships
-    concept = relationship('Concepts', back_populates='explanations')
+    concept = relationship('Concept', back_populates='explanations')
 
 class PDFDocuments(Base):
     __tablename__ = 'pdf_documents'
@@ -394,5 +410,24 @@ class PDFDocuments(Base):
     processed_at = Column(DateTime, default=datetime.utcnow)
     concept_ids = Column(JSON, default=list)  # IDs of concepts extracted from this PDF
 
+# New model for project submissions
+class ProjectSubmissions(Base):
+    __tablename__ = 'project_submissions'
+    
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey('projects.id'))
+    student_id = Column(Integer, ForeignKey('users.id'))
+    class_id = Column(Integer, ForeignKey('classes.id'))
+    submission_url = Column(String, nullable=True)
+    submission_notes = Column(String, nullable=True)
+    submitted_at = Column(DateTime, default=datetime.utcnow)
+    status = Column(Enum(AssignmentStatus), default=AssignmentStatus.SUBMITTED)
+    score = Column(Float, nullable=True)  # 0-100
+    
+    # Relationships
+    project = relationship('Projects')
+    student = relationship('Users')
+    class_obj = relationship('Classes')
+
 # Update the Concepts model to include explanations relationship
-Concepts.explanations = relationship('ConceptExplanations', back_populates='concept', cascade='all, delete-orphan')
+Concept.explanations = relationship('ConceptExplanations', back_populates='concept', cascade='all, delete-orphan')
