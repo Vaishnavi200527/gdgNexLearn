@@ -173,32 +173,53 @@ def extract_concepts_with_gemini(text_content: str) -> List[Dict[str, str]]:
         
         # STEP 2: Configure Gemini
         genai.configure(api_key=api_key)
-        
-        # Try to use gemini-1.5-flash, fallback to available models if it fails
+
+        # List available models and use the first one that supports generateContent
+        available_models = [m for m in genai.list_models()
+                          if 'generateContent' in m.supported_generation_methods]
+
+        if not available_models:
+            logger.error("No models available with generateContent support")
+            return []
+
+        # Use the first available model that supports generateContent
+        model_name = available_models[0].name
+        logger.info(f"Using model: {model_name}")
+
         try:
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            
+            model = genai.GenerativeModel(model_name)
+
             # STEP 3: Create STRICT prompt
             prompt = create_ai_prompt_for_concepts(clean_text, found_headings)
-            
+
             # STEP 4: Get response
             response = model.generate_content(prompt)
+            logger.info(f"Successfully used model: {model_name}")
+
         except Exception as e:
-            logger.warning(f"Failed to use gemini-1.5-flash: {e}. Attempting fallback to available models.")
-            
-            # List available models
-            available_models = [m for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-            if not available_models:
-                logger.error("No available Gemini models found.")
+            logger.warning(f"Failed to use {model_name}: {e}")
+            response = None
+
+        # If all models failed, try to list available models
+        if response is None:
+            try:
+                logger.warning("All preferred models failed. Listing available models...")
+                available_models = [m for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+                if not available_models:
+                    logger.error("No available Gemini models found.")
+                    return []
+
+                # Use the first available model
+                model_name = available_models[0].name
+                logger.info(f"Using first available model: {model_name}")
+
+                model = genai.GenerativeModel(model_name)
+                prompt = create_ai_prompt_for_concepts(clean_text, found_headings)
+                response = model.generate_content(prompt)
+
+            except Exception as e:
+                logger.error(f"Failed to use any available model: {e}")
                 return []
-            
-            # Use the first available model (usually gemini-pro or similar)
-            model_name = available_models[0].name
-            logger.info(f"Falling back to model: {model_name}")
-            
-            model = genai.GenerativeModel(model_name)
-            prompt = create_ai_prompt_for_concepts(clean_text, found_headings)
-            response = model.generate_content(prompt)
             
         response_text = response.text.strip()
         

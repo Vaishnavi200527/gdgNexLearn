@@ -68,13 +68,13 @@ async def create_adaptive_assignment(
     first_concept_data = concepts_data[0]
     
     # 3. Get or create the main concept
-    concept = db.query(models.Concepts).filter(
-        models.Concepts.name.ilike(f"%{first_concept_data['name']}%")
+    concept = db.query(models.Concept).filter(
+        models.Concept.concept_name.ilike(f"%{first_concept_data['name']}%")
     ).first()
-    
+
     if not concept:
-        concept = models.Concepts(
-            name=first_concept_data['name'],
+        concept = models.Concept(
+            concept_name=first_concept_data['name'],
             description=first_concept_data.get('definition', '')
         )
         db.add(concept)
@@ -167,14 +167,14 @@ async def process_pdf(
         processed_concepts = []
         for concept_data in concepts_data:
             # Create or update concept in database
-            concept = db.query(models.Concepts).filter(
-                models.Concepts.concept_name.ilike(f"%{concept_data['name']}%") |
-                models.Concepts.concept_name.ilike(concept_data['name'])
+            concept = db.query(models.Concept).filter(
+                models.Concept.concept_name.ilike(f"%{concept_data['name']}%") |
+                models.Concept.concept_name.ilike(concept_data['name'])
             ).first()
 
             if not concept:
                 # Create new concept with detailed information
-                concept = models.Concepts(
+                concept = models.Concept(
                     concept_name=concept_data['name'],
                     description=concept_data['definition'],
                     id_slug=concept_data['name'].lower().replace(' ', '-').replace('_', '-')
@@ -286,14 +286,14 @@ async def process_pdf_detailed(
         detailed_concepts = []
         for concept_data in result.get("concepts", []):
             # Create or update concept in database
-            concept = db.query(models.Concepts).filter(
-                models.Concepts.concept_name.ilike(f"%{concept_data['name']}%") |
-                models.Concepts.concept_name.ilike(concept_data['name'])
+            concept = db.query(models.Concept).filter(
+                models.Concept.concept_name.ilike(f"%{concept_data['name']}%") |
+                models.Concept.concept_name.ilike(concept_data['name'])
             ).first()
 
             if not concept:
                 # Create new concept
-                concept = models.Concepts(
+                concept = models.Concept(
                     concept_name=concept_data['name'],
                     description=concept_data['definition'],
                     id_slug=concept_data['name'].lower().replace(' ', '-').replace('_', '-')

@@ -10,6 +10,7 @@ from auth_utils import get_current_user
 
 # For social sharing
 import urllib.parse
+import os
 from jinja2 import Environment, FileSystemLoader
 
 router = APIRouter(
@@ -130,7 +131,7 @@ def get_quiz_for_student(
     return db_quiz
 
 @router.post("/{quiz_id}/submit", response_model=schemas.StudentQuizResponse)
-def submit_quiz(
+async def submit_quiz(
     quiz_id: int,
     submission: schemas.StudentQuizSubmission,
     db: Session = Depends(get_db),
@@ -217,6 +218,39 @@ def submit_quiz(
                 mastery_score=mastery_score
             )
             db.add(mastery_record)
+
+    # Generate detailed question reviews
+    question_reviews = []
+    for question in db_quiz.questions:
+        student_answer = submission.answers.get(str(question.id))
+        is_correct = student_answer == question.correct_answer if student_answer else False
+
+        # Get concept name and id if available
+        concept_name = None
+        concept_id = None
+        if hasattr(question, 'concept_id') and question.concept_id:
+            concept = db.query(models.Concept).filter(models.Concept.id == question.concept_id).first()
+            concept_name = concept.concept_name if concept else None
+            concept_id = question.concept_id
+
+        question_reviews.append(schemas.QuestionReviewItem(
+            question_id=question.id,
+            question_text=question.question_text,
+            student_answer=student_answer,
+            correct_answer=question.correct_answer,
+            is_correct=is_correct,
+            explanation=None,  # Could be enhanced with AI explanations
+            concept_name=concept_name,
+            concept_id=concept_id
+        ))
+
+    # Generate concept review for weak areas
+    concept_review = await generate_concept_review(current_user.id, quiz_id, concept_attempts, db)
+
+    # Store the concept review and question reviews in the student quiz record
+    if concept_review:
+        student_quiz.concept_review = concept_review
+    student_quiz.question_reviews = question_reviews
 
     db.commit()
     db.refresh(student_quiz)
@@ -612,3 +646,179 @@ def get_question_statistics(quiz_id: int, db: Session) -> Dict[int, Dict[str, An
                 question_stats[question_id]["point_biserial"] = point_biserial if not math.isnan(point_biserial) else 0.0
     
     return question_stats
+
+async def generate_concept_review(student_id: int, quiz_id: int, concept_attempts: dict, db: Session) -> dict:
+    """
+    Generate detailed concept review for weak areas based on quiz performance.
+    Provides simplified explanations, real-world examples, and structured learning content.
+    """
+    from services.ai_content_generation import call_gemini_api
+    from services.concept_explanation_storage import ConceptExplanationStorage
+
+    weak_concepts = []
+
+    # Identify weak concepts (those with low performance)
+    for concept_id, attempts in concept_attempts.items():
+        if not attempts:
+            continue
+
+        correct_count = sum(1 for attempt in attempts if attempt)
+        accuracy = correct_count / len(attempts)
+
+        # Consider concepts weak if accuracy < 60%
+        if accuracy < 0.6:
+            concept = db.query(models.Concept).filter(models.Concept.id == concept_id).first()
+            if concept:
+                weak_concepts.append({
+                    'concept_id': concept_id,
+                    'concept_name': concept.concept_name,
+                    'accuracy': accuracy,
+                    'attempts': len(attempts)
+                })
+
+    if not weak_concepts:
+        return None
+
+    # Get quiz details for PDF extraction
+    quiz = db.query(models.Quiz).filter(models.Quiz.id == quiz_id).first()
+    if not quiz:
+        return None
+
+    # Try to get PDF content from class assignments
+    pdf_text = ""
+    try:
+        # Find class assignment that has this quiz
+        class_quiz = db.query(models.ClassQuizzes).filter(
+            models.ClassQuizzes.quiz_id == quiz_id
+        ).first()
+
+        if class_quiz:
+            # Get assignments for this class that might have PDFs
+            assignments = db.query(models.Assignments).join(models.ClassAssignments).filter(
+                models.ClassAssignments.class_id == class_quiz.class_id
+            ).all()
+
+            for assignment in assignments:
+                if assignment.content_url and weak_concepts:
+                    try:
+                        pdf_text = extract_pdf_text(assignment.content_url)
+                        if pdf_text:
+                            break  # Use the first PDF we find
+                    except Exception as e:
+                        continue
+    except Exception as e:
+        pass
+
+    # If no PDF text, get from concept explanations
+    if not pdf_text:
+        storage = ConceptExplanationStorage(db)
+        for concept in weak_concepts:
+            explanation_obj = db.query(models.ConceptExplanations).filter(
+                models.ConceptExplanations.concept_id == concept['concept_id']
+            ).first()
+
+            if explanation_obj and explanation_obj.detailed_explanation:
+                pdf_text = explanation_obj.detailed_explanation
+                break
+
+    # Generate detailed AI explanations for weak concepts
+    concept_reviews = []
+    for concept in weak_concepts[:3]:  # Limit to top 3 weak concepts
+        try:
+            mastery_score = int(concept['accuracy'] * 100)
+
+            prompt = f"""
+            You are an AI tutor helping a student review a concept they struggled with in a quiz.
+            The student got {mastery_score}% accuracy on questions about "{concept['concept_name']}".
+
+            **Context from their material:**
+            {pdf_text[:2000] if pdf_text else "No specific material provided"}
+
+            **Instructions:**
+            Provide a detailed, simplified explanation to help them understand this concept better.
+            Structure the response clearly with headings and use simple language.
+            Include real-world examples specific to this concept.
+
+            **Response Format (JSON only):**
+            {{
+              "title": "Clear heading for the concept review (e.g., 'Understanding {concept['concept_name']}')",
+              "key_points": ["3-5 key points they should remember, written simply"],
+              "explanation": "A clear, step-by-step explanation of the concept in simple language",
+              "real_world_examples": ["2-3 specific real-world examples showing how this concept applies"],
+              "common_mistakes": ["2-3 common mistakes to avoid, explained simply"],
+              "practice_tip": "One specific, actionable tip for practicing this concept"
+            }}
+            """
+
+            response = await call_gemini_api(prompt, expect_json=True)
+            if isinstance(response, dict):
+                concept_reviews.append({
+                    'concept_name': concept['concept_name'],
+                    'accuracy': concept['accuracy'],
+                    **response
+                })
+            else:
+                # Fallback if AI fails
+                concept_reviews.append({
+                    'concept_name': concept['concept_name'],
+                    'accuracy': concept['accuracy'],
+                    'title': f'Understanding {concept["concept_name"]}',
+                    'key_points': ['Focus on understanding the core principles', 'Practice with similar examples', 'Review related concepts'],
+                    'explanation': f'You had {int(concept["accuracy"]*100)}% accuracy on {concept["concept_name"]}. This concept is fundamental and needs more practice. Review the material and try similar questions.',
+                    'real_world_examples': [f'In everyday life, {concept["concept_name"]} helps us make decisions about similar situations.', f'At work, understanding {concept["concept_name"]} can improve your performance in related tasks.'],
+                    'common_mistakes': ['Rushing through questions without understanding', 'Not reading the question carefully', 'Missing key details in the explanation'],
+                    'practice_tip': 'Try explaining this concept to someone else in simple terms'
+                })
+
+        except Exception as e:
+            # Simple fallback
+            concept_reviews.append({
+                'concept_name': concept['concept_name'],
+                'accuracy': concept['accuracy'],
+                'title': f'Understanding {concept["concept_name"]}',
+                'key_points': ['Review the basic principles', 'Practice with examples', 'Ask for help if needed'],
+                'explanation': f'You struggled with {concept["concept_name"]} (only {int(concept["accuracy"]*100)}% correct). Take time to review this topic and practice with similar problems.',
+                'real_world_examples': [f'{concept["concept_name"]} is used in many real-world situations.', f'Understanding {concept["concept_name"]} helps in making better decisions.'],
+                'common_mistakes': ['Not understanding fundamentals', 'Careless errors in application'],
+                'practice_tip': 'Work through additional practice problems and explain your answers'
+            })
+
+    return {
+        'weak_concepts_count': len(weak_concepts),
+        'weak_concepts_list': [{'name': wc['concept_name'], 'accuracy': wc['accuracy']} for wc in weak_concepts],
+        'concept_reviews': concept_reviews,
+        'recommendation': f"You struggled with {len(weak_concepts)} concept{'s' if len(weak_concepts) != 1 else ''}. Focus on reviewing these areas before your next quiz."
+    }
+
+def extract_pdf_text(pdf_path: str) -> str:
+    """
+    Extract text content from a PDF file for concept review.
+    """
+    try:
+        import pdfplumber
+        import requests
+        import io
+        import os
+
+        if pdf_path.startswith("http://") or pdf_path.startswith("https://"):
+            response = requests.get(pdf_path)
+            response.raise_for_status()
+            pdf_file = io.BytesIO(response.content)
+        else:
+            # It's a local file path
+            full_path = os.path.join(os.path.dirname(__file__), '..', pdf_path.lstrip('/'))
+            if not os.path.exists(full_path):
+                raise FileNotFoundError(f"PDF file not found at {full_path}")
+            pdf_file = open(full_path, "rb")
+
+        with pdfplumber.open(pdf_file) as pdf:
+            text = ""
+            for page in pdf.pages[:5]:  # Limit to first 5 pages for performance
+                text += page.extract_text() + "\n"
+
+        if not (pdf_path.startswith("http://") or pdf_path.startswith("https://")):
+             pdf_file.close()
+
+        return text.strip()
+    except Exception as e:
+        return ""

@@ -107,14 +107,61 @@ def seed_database():
     
     # Create sample assignments
     assignments = [
-        models.Assignments(concept_id=concepts[0].id, difficulty_level=1, title="Variables and Types", 
-                          description="Practice declaring variables and working with different data types"),
-        models.Assignments(concept_id=concepts[0].id, difficulty_level=2, title="Control Flow", 
-                          description="Practice if statements, loops, and exception handling"),
-        models.Assignments(concept_id=concepts[1].id, difficulty_level=2, title="List Operations", 
-                          description="Practice creating, accessing, and manipulating lists"),
-        models.Assignments(concept_id=concepts[1].id, difficulty_level=3, title="Dictionary Challenges", 
-                          description="Practice working with dictionaries and nested data structures")
+        models.Assignments(
+            concept_id=concepts[0].id, 
+            difficulty_level=1, 
+            title="Variables and Types", 
+            description="Practice declaring variables and working with different data types",
+            learning_objectives=[
+                {"icon": "code", "title": "Variable Declaration", "description": "Declare and initialize variables of different types."},
+                {"icon": "sync_alt", "title": "Type Differentiation", "description": "Differentiate between integer, float, and string types."},
+                {"icon": "transform", "title": "Type Casting", "description": "Perform basic type casting between compatible data types."}
+            ]
+        ),
+        models.Assignments(
+            concept_id=concepts[0].id, 
+            difficulty_level=2, 
+            title="Control Flow", 
+            description="Practice if statements, loops, and exception handling",
+            learning_objectives=[
+                {"icon": "rule", "title": "Conditional Logic", "description": "Write conditional statements using if, elif, and else."},
+                {"icon": "replay", "title": "Looping Constructs", "description": "Create loops using for and while for iteration."},
+                {"icon": "error", "title": "Error Handling", "description": "Handle potential errors gracefully using try-except blocks."}
+            ]
+        ),
+        models.Assignments(
+            concept_id=concepts[1].id, 
+            difficulty_level=2, 
+            title="List Operations", 
+            description="Practice creating, accessing, and manipulating lists",
+            learning_objectives=[
+                {"icon": "add_box", "title": "List Creation", "description": "Create new lists and add elements to them."},
+                {"icon": "dvr", "title": "Indexing and Slicing", "description": "Access elements and sub-lists using indexing and slicing."},
+                {"icon": "build", "title": "List Methods", "description": "Use common list methods to modify and organize list data."}
+            ]
+        ),
+        models.Assignments(
+            concept_id=concepts[1].id, 
+            difficulty_level=3, 
+            title="Dictionary Challenges", 
+            description="Practice working with dictionaries and nested data structures",
+            learning_objectives=[
+                {"icon": "storage", "title": "Dictionary Manipulation", "description": "Create, update, and delete key-value pairs in dictionaries."},
+                {"icon": "account_tree", "title": "Nested Data", "description": "Work with nested dictionaries and lists."},
+                {"icon": "loop", "title": "Iteration Techniques", "description": "Iterate over keys, values, and items in a dictionary."}
+            ]
+        ),
+        models.Assignments(
+            concept_id=concepts[0].id, 
+            difficulty_level=2, 
+            title="Python Functions", 
+            description="Practice defining and calling functions in Python.",
+            learning_objectives=[
+                {"icon": "functions", "title": "Function Definition", "description": "Define functions with and without parameters."},
+                {"icon": "keyboard_return", "title": "Return Values", "description": "Return values from functions."},
+                {"icon": "call_made", "title": "Function Calls", "description": "Call functions with required arguments."}
+            ]
+        )
     ]
     
     # Add assignments to database
@@ -132,7 +179,8 @@ def seed_database():
         models.StudentAssignments(student_id=students[0].id, assignment_id=assignments[1].id, status="graded", score=85.0),
         models.StudentAssignments(student_id=students[1].id, assignment_id=assignments[0].id, status="graded", score=95.0),
         models.StudentAssignments(student_id=students[2].id, assignment_id=assignments[0].id, status="submitted"),
-        models.StudentAssignments(student_id=students[3].id, assignment_id=assignments[0].id, status="graded", score=40.0)
+        models.StudentAssignments(student_id=students[3].id, assignment_id=assignments[0].id, status="graded", score=40.0),
+        models.StudentAssignments(student_id=students[0].id, assignment_id=assignments[4].id, status="not_started")
     ]
     
     # Add student assignments to database

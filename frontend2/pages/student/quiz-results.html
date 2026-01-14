@@ -51,18 +51,39 @@
                     <span class="ml-3 text-gray-600">Loading quiz results...</span>
                 </div>
 
-                <!-- Quiz Results Container -->
-                <div id="quizResultsContainer" class="hidden">
-                    <!-- Results will be inserted here by JavaScript -->
-                </div>
-            </div>
-            </div>
-        </main>
-    </div>
-
-    <script type="module" src="../../js/student/quiz-results.js"></script>
-</body>
-</html>
+                <!-- Quiz Overview -->
+                <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-8">
+                    <div class="px-4 py-5 sm:px-6">
+                        <h2 id="quizTitle" class="text-lg font-medium text-gray-900">Loading quiz...</h2>
+                        <p id="quizDescription" class="mt-1 max-w-2xl text-sm text-gray-500">Loading description...</p>
+                    </div>
+                    <div class="border-t border-gray-200">
+                        <dl>
+                            <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                <dt class="text-sm font-medium text-gray-500">Score</dt>
+                                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                                    <div class="flex items-center">
+                                        <div class="flex-1 bg-gray-200 rounded-full h-4 mr-4">
+                                            <div id="scoreBar" class="bg-green-500 h-4 rounded-full" style="width: 0%"></div>
+                                        </div>
+                                        <span id="scoreText" class="font-medium">0%</span>
+                                    </div>
+                                </dd>
+                            </div>
+                            <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                <dt class="text-sm font-medium text-gray-500">Correct Answers</dt>
+                                <dd id="correctAnswers" class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">0 of 0</dd>
+                            </div>
+                            <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                <dt class="text-sm font-medium text-gray-500">Total Questions</dt>
+                                <dd id="totalQuestions" class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">0</dd>
+                            </div>
+                            <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                <dt class="text-sm font-medium text-gray-500">Time Taken</dt>
+                                <dd id="timeTaken" class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">-</dd>
+                            </div>
+                            <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                                <dt class="text-sm font-medium text-gray-500">Submitted On</dt>
                                 <dd id="submittedOn" class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">-</dd>
                             </div>
                         </dl>
@@ -81,6 +102,19 @@
                                 <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
                                 <p class="mt-2 text-gray-600">Loading your answers...</p>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Concept Review Section (shown only for scores < 70%) -->
+                <div id="conceptReviewSection" class="hidden bg-white shadow overflow-hidden sm:rounded-lg mb-8">
+                    <div class="px-4 py-5 sm:px-6">
+                        <h2 class="text-lg font-medium text-gray-900 mb-4">
+                            <span class="material-icons mr-2 text-orange-500">school</span>
+                            Concept Review
+                        </h2>
+                        <div id="conceptReviewContent">
+                            <!-- Concept review content will be inserted here -->
                         </div>
                     </div>
                 </div>

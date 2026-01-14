@@ -15,7 +15,7 @@ class ContinuousAssessmentService:
         Generate micro-assessments to check student understanding after concept delivery.
         """
         # Get concept information
-        concept = self.db.query(models.Concepts).filter(models.Concepts.id == concept_id).first()
+        concept = self.db.query(models.Concept).filter(models.Concept.id == concept_id).first()
         if not concept:
             return []
         

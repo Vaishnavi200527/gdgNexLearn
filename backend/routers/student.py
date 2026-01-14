@@ -295,7 +295,7 @@ def get_mastery(
     for record in mastery_records:
         result = {
             "concept_id": record.concept_id,
-            "concept_name": record.concept.name if record.concept else "Unknown",
+            "concept_name": record.concept.concept_name if record.concept else "Unknown",
             "mastery_score": float(record.mastery_score),  # Ensure it's a float
             "level": int(record.mastery_score / 20) + 1
         }
@@ -467,7 +467,7 @@ async def get_assignment_concepts(
     # Generate personalized explanation using AI
     try:
         explanation = await generate_ai_explanation(
-            concept_name=concept.name,
+            concept_name=concept.concept_name,
             pdf_text=pdf_text,
             mastery_score=mastery_score,
             detail_level=detail_level
@@ -480,7 +480,7 @@ async def get_assignment_concepts(
         "assignment_id": assignment_id,
         "assignment_title": assignment.title,
         "concept_id": assignment.concept_id,
-        "concept_name": concept.name,
+        "concept_name": concept.concept_name,
         "detail_level": detail_level,
         "explanation": explanation,
         "mastery_score": mastery_score
@@ -694,7 +694,8 @@ async def get_student_assignments(
             "status": sa.status,
             "score": sa.score,
             "submitted_at": sa.submitted_at,
-            "due_date": due_date
+            "due_date": due_date,
+            "learning_objectives": assignment.learning_objectives
         })
     
     return result
@@ -737,7 +738,8 @@ async def get_assignment_details(
         "status": assignment[1],
         "score": assignment[2],
         "submitted_at": assignment[3],
-        "due_date": assignment[4]
+        "due_date": assignment[4],
+        "learning_objectives": assignment[0].learning_objectives
     }
 
 @router.post("/assignments/{assignment_id}/submit", status_code=status.HTTP_200_OK)
@@ -884,7 +886,7 @@ async def get_assignment_quiz(
     # Generate quiz questions using AI (mocked here)
     try:
         questions = await generate_ai_quiz(
-            concept_name=assignment.concept.name,
+            concept_name=assignment.concept.concept_name,
             pdf_text=pdf_text,
             mastery_score=mastery_score,
             question_count=10  # As requested
@@ -895,7 +897,7 @@ async def get_assignment_quiz(
     return {
         "assignment_id": assignment_id,
         "assignment_title": assignment.title,
-        "concept_name": assignment.concept.name if assignment.concept else "General Programming",
+        "concept_name": assignment.concept.concept_name if assignment.concept else "General Programming",
         "difficulty": "adaptive",
         "mastery_score": mastery_score,
         "questions": questions
@@ -939,16 +941,66 @@ async def submit_quiz_answers(
         total_questions = len(questions)
         correct_answers = 0
         user_answers_map = {ans['questionIndex']: ans['answer'] for ans in user_answers}
+        question_results = []
 
         for i, question_data in enumerate(questions):
             user_answer = user_answers_map.get(i)
             correct_answer = question_data.get("correct_answer")
+            question_text = question_data.get("question", f"Question {i+1}")
 
+            is_correct = False
             if user_answer is not None and correct_answer is not None:
                 if str(user_answer).strip().lower() == str(correct_answer).strip().lower():
                     correct_answers += 1
+                    is_correct = True
+            
+            question_results.append({
+                "question_text": question_text,
+                "user_answer": user_answer,
+                "correct_answer": correct_answer,
+                "is_correct": is_correct
+            })
 
         score = int((correct_answers / total_questions) * 100) if total_questions > 0 else 0
+
+        # Get assignment details with concept relationship loaded
+        assignment = db.query(models.Assignments).options(
+            joinedload(models.Assignments.concept)
+        ).filter(models.Assignments.id == assignment_id).first()
+        
+        if not assignment:
+            error_msg = f"Assignment {assignment_id} not found in database"
+            raise HTTPException(status_code=404, detail=error_msg)
+
+        # --- ADAPTIVE LEARNING: REMEDIAL CONTENT GENERATION ---
+        # Generate simplified explanation if score is low (< 70%), regardless of attempt
+        remedial_content = None
+        if score < 70 and assignment.concept:
+            try:
+                # Prepare concept data for AI
+                concept_data = {
+                    "concept": assignment.concept.concept_name,
+                    "description": assignment.concept.description,
+                    "wrong_questions": [q["question_text"] for q in question_results if not q["is_correct"]]
+                }
+                
+                # Try to get more detailed content if available to give AI more context
+                explanation_obj = db.query(models.ConceptExplanations).filter(
+                    models.ConceptExplanations.concept_id == assignment.concept_id
+                ).first()
+                
+                if explanation_obj:
+                    concept_data["definition"] = explanation_obj.definition
+                    if explanation_obj.detailed_explanation:
+                        # Provide context but limit length
+                        concept_data["context"] = explanation_obj.detailed_explanation[:1000]
+                
+                # Generate remedial content using the AI service
+                remedial_content = await ai_content_generation.reteach_concept(concept_data)
+                
+            except Exception as e:
+                print(f"Error generating remedial content: {e}")
+                # Fail silently on AI error
 
         # Check if this quiz has already been submitted and graded.
         # Only the first attempt updates the score and mastery.
@@ -961,17 +1013,9 @@ async def submit_quiz_answers(
                 "correct": correct_answers,
                 "total": total_questions,
                 "passed": score >= 70,
-                "message": "Quiz re-attempted. This score is for practice and does not replace your first attempt."
+                "message": "Quiz re-attempted. This score is for practice and does not replace your first attempt.",
+                "remedial_content": remedial_content
             }
-
-        # Get assignment details with concept relationship loaded
-        assignment = db.query(models.Assignments).options(
-            joinedload(models.Assignments.concept)
-        ).filter(models.Assignments.id == assignment_id).first()
-        
-        if not assignment:
-            error_msg = f"Assignment {assignment_id} not found in database"
-            raise HTTPException(status_code=404, detail=error_msg)
 
         # Update the student's assignment record with the score and status
         student_assignment.score = score
@@ -1031,7 +1075,9 @@ async def submit_quiz_answers(
             "total": total_questions,
             "passed": score >= 70,
             "message": "Quiz submitted successfully! Your mastery has been updated.",
-            "mastery_updated": assignment.concept_id is not None
+            "mastery_updated": assignment.concept_id is not None,
+            "remedial_content": remedial_content,  # Return the adaptive explanation
+            "question_results": question_results
         }
 
     except Exception as e:

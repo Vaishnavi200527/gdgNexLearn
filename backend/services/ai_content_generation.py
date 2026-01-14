@@ -196,7 +196,14 @@ Re-explain it:
 - Without technical jargon
 
 Concept:
-{concept_data}""",
+{concept_data}
+
+Return ONLY JSON with this structure:
+{{
+  "simplified_explanation": "string",
+  "simple_example": "string",
+  "key_terms": ["string", "string"]
+}}""",
 
     "ask_ai_tutor": """
 You are a tutor helping a student with their studies.
@@ -269,6 +276,51 @@ Rules:
 
 Text:
 {raw_explanation}""",
+
+    "pdf_based_remedial_content": """
+You are an expert, friendly, and patient AI tutor.
+A student has just taken a quiz and struggled with the following concept(s): {concepts_to_review}.
+They answered these questions incorrectly:
+{incorrect_questions}
+
+Your task is to provide a high-quality, structured review for the student based *exclusively* on the provided source material from their teacher's PDF.
+
+**Source Material (from PDF):**
+---
+{pdf_text}
+---
+
+**Instructions:**
+1.  **Analyze the Source Material:** Carefully read the provided text to understand how the concepts are taught.
+2.  **Address Weak Concepts:** For each of the weak concepts listed in {concepts_to_review}, find the most relevant sections in the source material.
+3.  **Synthesize Explanations:** Do not just copy-paste. Rephrase and synthesize the information from the source material to create clear, easy-to-understand explanations for each weak concept.
+4.  **Structure the Output:** Present the information in a clear, hierarchical manner. The user wants a good flow and presentation.
+
+**Response Format:**
+Return ONLY a single valid JSON object. Do not include any text outside the JSON object.
+The JSON object should have a single key "concepts_to_review", which is a list of objects. Each object represents a concept the student needs to review.
+
+**JSON Structure to Return:**
+{{
+  "concepts_to_review": [
+    {{
+      "concept_name": "Name of the first weak concept",
+      "simplified_explanation": "A simplified explanation of this concept, synthesized *directly from the provided source material*. Explain it like you're talking to a student who is finding it difficult. Use short paragraphs.",
+      "real_world_example": "A real-world example or analogy for this concept, inspired by or directly from the source material. If the material doesn't have one, create a simple one that fits the context.",
+      "key_terms_from_pdf": [
+         {{
+            "term": "A key term related to the concept found in the PDF",
+            "definition": "The definition of that term, as explained in the PDF."
+         }},
+         {{
+            "term": "Another key term",
+            "definition": "Its definition from the PDF."
+         }}
+      ]
+    }}
+  ]
+}}
+""",
     
     "contextual_question_answering": """
 You are an AI tutor helping a student understand a specific concept.
@@ -1349,28 +1401,171 @@ async def teach_concept(concept_data: dict, student_level: str = "average", expl
 async def reteach_concept(concept_data: dict, api_key: str = None) -> dict:
     """
     Re-teach a concept in simpler terms when student struggles.
-    
+
     Args:
         concept_data (dict): Concept information
         api_key (str, optional): Gemini API key
-        
+
     Returns:
         dict: Simplified explanation of the concept
     """
-    # Convert concept data to JSON string for the prompt
-    concept_json = json.dumps(concept_data, indent=2)
-    prompt = AI_PROMPTS["reteach_concept"].format(concept_data=concept_json)
+    # Extract concept information for better prompt formatting
+    concept_name = concept_data.get('concept', 'this concept')
+    description = concept_data.get('description', '')
+    definition = concept_data.get('definition', '')
+    context = concept_data.get('context', '')[:1000]  # Limit context length
+    wrong_questions = concept_data.get('wrong_questions', [])
     
+    mistakes_context = ""
+    if wrong_questions:
+        mistakes_context = "The student answered the following questions incorrectly:\n" + "\n".join([f"- {q}" for q in wrong_questions])
+
+    prompt = f"""You are a patient tutor helping a student who struggled with a concept.
+
+CONCEPT INFORMATION:
+- Name: {concept_name}
+- Description: {description}
+- Definition: {definition}
+- Context: {context}
+
+{mistakes_context}
+
+TASK: The student didn't understand this concept. Provide a simplified re-explanation using:
+1. Very simple words and short sentences
+2. A new, easy-to-understand example that does NOT repeat the concept name "{concept_name}" unnecessarily
+3. Break down complex ideas into basic steps
+4. Address the specific misunderstandings implied by the wrong questions if provided.
+5. IMPORTANT: Do not repeat the concept name "{concept_name}" multiple times in your explanation. Use pronouns like "this process" or "it" instead after the first mention.
+
+RESPONSE FORMAT: Your response must be valid JSON with exactly this structure. Do not include any other text, explanations, or formatting:
+
+{{
+  "simplified_explanation": "A clear, simple explanation addressing the specific gaps",
+  "simple_example": "A straightforward example that illustrates the concept without repeating the concept name",
+  "key_terms": ["term1", "term2", "term3"]
+}}"""
+
     try:
         response = await call_gemini_api(prompt, api_key)
-        return response
+        # Handle various response formats and map to expected structure
+        if isinstance(response, dict):
+            # Try to map common variations of the expected keys
+            simplified_explanation = (
+                response.get('simplified_explanation') or
+                response.get('explanation') or
+                response.get('simplified') or
+                response.get('simple_explanation') or
+                ""
+            )
+            simple_example = (
+                response.get('simple_example') or
+                response.get('example') or
+                response.get('simple') or
+                ""
+            )
+            key_terms = (
+                response.get('key_terms') or
+                response.get('terms') or
+                response.get('keywords') or
+                []
+            )
+
+            # Ensure key_terms is a list
+            if isinstance(key_terms, str):
+                key_terms = [key_terms]
+            elif not isinstance(key_terms, list):
+                key_terms = []
+
+            # Remove duplicates and clean up content
+            def remove_duplicate_concept_name(text: str, concept_name: str) -> str:
+                """Remove excessive repetitions of the concept name"""
+                if not text:
+                    return text
+
+                # Split concept name into words for better matching
+                concept_words = concept_name.lower().split()
+                text_lower = text.lower()
+
+                # Count occurrences
+                count = text_lower.count(concept_name.lower())
+
+            # If more than 1 occurrence, replace extras with pronouns
+                if count > 1:
+                    # Keep first occurrence, replace others with "this process" or "it"
+                    parts = text.split(concept_name)
+                    if len(parts) > 2:
+                        # Keep first part with concept name, replace subsequent ones
+                        result = parts[0] + concept_name
+                        for i, part in enumerate(parts[1:], 1):
+                            # Alternate between "this process" and "it"
+                            replacement = "this process" if i % 2 == 1 else "it"
+                            result += replacement + part
+                        text = result
+
+                return text
+
+            # Clean up the content to remove duplicates
+            simplified_explanation = remove_duplicate_concept_name(simplified_explanation, concept_name)
+            simple_example = remove_duplicate_concept_name(simple_example, concept_name)
+
+            # Remove duplicate key terms
+            key_terms = list(set(key_terms)) if key_terms else []
+
+            # If we have at least some content, return it
+            if simplified_explanation or simple_example:
+                return {
+                    "simplified_explanation": simplified_explanation,
+                    "simple_example": simple_example,
+                    "key_terms": key_terms
+                }
+
+        # If response parsing failed or structure is invalid, use fallback
+        raise ValueError("Invalid or incomplete response structure")
+
     except Exception as e:
         print(f"Error re-teaching concept: {e}")
-        # Return a simplified default explanation if generation fails
+        # Return a concept-specific fallback explanation
         return {
-            "simplified_explanation": f"Let me explain {concept_data.get('concept', 'this concept')} in a simpler way...",
-            "simple_example": "Here's a simple example...",
-            "key_terms": ["Term 1", "Term 2"]
+            "simplified_explanation": f"This concept involves understanding key principles that can be broken down into simpler parts. Let's approach this step by step by focusing on the basic ideas first.",
+            "simple_example": f"For example, we can see how basic ideas combine to create more complex understanding. Think of it like building blocks - each simple part contributes to the whole.",
+            "key_terms": ["basic principles", "step-by-step learning", "practical application"]
+        }
+
+
+async def generate_pdf_based_remedial_content(
+    weak_concepts: List[str],
+    pdf_text: str,
+    incorrect_questions: List[str],
+    api_key: str = None
+) -> dict:
+    """
+    Generates a structured, personalized explanation for weak concepts based on the
+    teacher's uploaded PDF.
+    """
+    concepts_to_review_str = ", ".join(f'"{c}"' for c in weak_concepts)
+    incorrect_questions_str = "\n".join(f"- {q}" for q in incorrect_questions)
+
+    prompt = AI_PROMPTS["pdf_based_remedial_content"].format(
+        concepts_to_review=concepts_to_review_str,
+        incorrect_questions=incorrect_questions_str,
+        pdf_text=pdf_text[:8000]  # Limit to 8k characters to be safe with token limits
+    )
+
+    try:
+        response = await call_gemini_api(prompt, api_key, expect_json=True)
+        return response
+    except Exception as e:
+        print(f"Error generating PDF-based remedial content: {e}")
+        # Fallback response
+        return {
+            "concepts_to_review": [
+                {
+                    "concept_name": weak_concepts[0] if weak_concepts else "Concept",
+                    "simplified_explanation": "Could not generate an AI-powered explanation at this time. Please review the course material or ask your teacher for help.",
+                    "real_world_example": "N/A",
+                    "key_terms_from_pdf": []
+                }
+            ]
         }
 
 
@@ -1573,3 +1768,61 @@ async def format_ui_friendly_explanation(raw_explanation: str, api_key: str = No
             "bullet_points": ["Key point 1", "Key point 2", "Key point 3"],
             "keywords": ["keyword1", "keyword2"]
         }
+
+async def extract_concepts_from_questions(question_texts: list, pdf_text: str, api_key: str = None) -> list:
+    """
+    Extract specific concepts or sub-topics from wrong quiz questions using AI.
+
+    Args:
+        question_texts (list): List of question texts that were answered incorrectly
+        pdf_text (str): Source PDF text for context
+        api_key (str, optional): Gemini API key
+
+    Returns:
+        list: List of specific concepts the student struggled with
+    """
+    if not question_texts:
+        return []
+
+    prompt = f"""
+You are an educational content analyzer.
+
+Given the following questions that a student answered incorrectly and the source PDF text, identify the specific concepts or sub-topics the student struggled with.
+
+Wrong Questions:
+{chr(10).join(f"- {q}" for q in question_texts)}
+
+Source PDF Text (excerpt):
+{pdf_text[:4000]}
+
+Instructions:
+- Analyze each wrong question to identify the specific concept or sub-topic being tested
+- Be specific and targeted - avoid general terms like "programming" if the question is about "loops"
+- Return ONLY a JSON array of strings, each being a specific concept or sub-topic
+- Limit to 3-5 most important concepts
+- Example: ["Variable Declaration", "Loop Control Structures", "Function Parameters"]
+
+Return ONLY the JSON array:
+"""
+
+    try:
+        response = await call_gemini_api(prompt, api_key, expect_json=True)
+        if isinstance(response, list):
+            return response
+        # If response is dict with concepts key
+        if isinstance(response, dict) and 'concepts' in response:
+            return response['concepts']
+        return []
+    except Exception as e:
+        print(f"Error extracting concepts from questions: {e}")
+        # Fallback: extract keywords from question texts
+        concepts = []
+        for q in question_texts[:3]:  # Limit to first 3
+            # Simple keyword extraction
+            words = q.lower().split()
+            # Look for common programming concepts
+            concept_keywords = ['variable', 'function', 'loop', 'class', 'object', 'array', 'string', 'integer', 'condition', 'method']
+            found = [w for w in words if any(k in w for k in concept_keywords)]
+            if found:
+                concepts.extend(found[:2])  # Take up to 2 per question
+        return list(set(concepts)) if concepts else []

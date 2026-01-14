@@ -328,7 +328,7 @@
             // Update skills mastered count
             const skillsMasteredElement = document.getElementById('skills-mastered');
             if (skillsMasteredElement) {
-                const masteredCount = masteryData.filter(item => (item.mastery_score || 0) >= 70).length;
+                const masteredCount = masteryData.filter(item => (item.mastery_score || 0) >= 75).length;
                 skillsMasteredElement.textContent = `${masteredCount}/${masteryData.length}`;
             }
             

@@ -159,6 +159,31 @@ class StudentAPI {
         }
     }
 
+    async submitAssignmentQuiz(assignmentId, quizData) {
+        if (!this.ensureAuthenticated()) {
+            throw new Error('Authentication required');
+        }
+
+        try {
+            const response = await this.api.request(`/student/assignments/${assignmentId}/quiz/submit`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.api.token || localStorage.getItem('token')}`
+                },
+                body: JSON.stringify(quizData)
+            });
+
+            // Invalidate cache for assignments since quiz submission may update status
+            this.invalidateCache('assignments');
+
+            return response;
+        } catch (error) {
+            console.error('Error submitting quiz:', error);
+            throw error;
+        }
+    }
+
     // Invalidate cache for a specific key or all caches if no key provided
     invalidateCache(key = null) {
         try {

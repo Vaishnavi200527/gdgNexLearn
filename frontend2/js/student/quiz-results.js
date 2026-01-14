@@ -94,12 +94,28 @@ class QuizResults {
             // Fetch submission data from API
             const response = await studentAPI.getQuizSubmission(quizId, submissionId);
             this.submission = response.data;
-            
+
             // Process submission data
             this.processSubmissionData();
-            
+
         } catch (error) {
             console.error('Error loading quiz results:', error);
+            showToast('Failed to load quiz results', 'error');
+            throw error;
+        }
+    }
+
+    async loadLatestSubmission(quizId) {
+        try {
+            // Fetch the latest submission for this quiz
+            const response = await studentAPI.getLatestQuizSubmission(quizId);
+            this.submission = response.data;
+
+            // Process submission data
+            this.processSubmissionData();
+
+        } catch (error) {
+            console.error('Error loading latest quiz submission:', error);
             showToast('Failed to load quiz results', 'error');
             throw error;
         }
@@ -150,21 +166,26 @@ class QuizResults {
             this.showErrorState('No results to display.');
             return;
         }
-        
+
         // Clear loading state
         this.showLoading(false);
-        
+
+        // Render concept review if available (for scores < 70%)
+        if (this.submission.concept_review) {
+            this.renderConceptReview(this.submission.concept_review);
+        }
+
         // Render each question with feedback
         const questionsHTML = this.questions.map((question, index) => {
             const userAnswer = this.submission.answers[index];
             const isCorrect = this.submission.correct_answers_by_question[index] || false;
             const correctAnswer = question.correct_option_index;
-            
+
             return this.renderQuestion(question, index, userAnswer, isCorrect, correctAnswer);
         }).join('');
-        
+
         this.elements.questionsContainer.innerHTML = questionsHTML;
-        
+
         // Set up event listeners for question toggles
         this.setupQuestionToggles();
     }
@@ -416,14 +437,223 @@ class QuizResults {
     }
 
     showLoading(show = true) {
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const mainContent = document.querySelector('main > div > div:not(#loadingIndicator)');
+
         if (show) {
-            this.elements.questionsContainer.innerHTML = `
-                <div class="text-center py-12">
-                    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
-                    <p class="mt-2 text-gray-600">Loading your results...</p>
-                </div>
-            `;
+            if (loadingIndicator) loadingIndicator.classList.remove('hidden');
+            // Hide all main content sections during loading
+            const sections = document.querySelectorAll('main > div > div:not(#loadingIndicator)');
+            sections.forEach(section => section.classList.add('hidden'));
+        } else {
+            if (loadingIndicator) loadingIndicator.classList.add('hidden');
+            // Show all main content sections after loading
+            const sections = document.querySelectorAll('main > div > div:not(#loadingIndicator)');
+            sections.forEach(section => section.classList.remove('hidden'));
         }
+    }
+
+    renderConceptReview(conceptReview) {
+        const conceptReviewSection = document.getElementById('conceptReviewSection');
+        const conceptReviewContent = document.getElementById('conceptReviewContent');
+
+        if (!conceptReview || !conceptReview.concept_reviews || conceptReview.concept_reviews.length === 0) {
+            conceptReviewSection.classList.add('hidden');
+            return;
+        }
+
+        // Show the concept review section
+        conceptReviewSection.classList.remove('hidden');
+
+        // Add recommendation at the top
+        const recommendationHTML = conceptReview.recommendation ? `
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                <div class="flex items-center">
+                    <span class="material-icons text-yellow-600 mr-2">lightbulb</span>
+                    <p class="text-sm font-medium text-yellow-800">${conceptReview.recommendation}</p>
+                </div>
+            </div>
+        ` : '';
+
+        // Step 1: Clear identification of weak concepts
+        const weakConceptsOverview = `
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                    <span class="material-icons text-red-600 mr-3">warning</span>
+                    Step 1: Concepts You Need to Focus On
+                </h3>
+                <p class="text-sm text-gray-600 mb-4">Based on your quiz performance, you struggled with these specific concepts. Let's review them one by one:</p>
+                <div class="grid gap-3">
+                    ${conceptReview.concept_reviews.map((review, index) => `
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between hover:bg-red-100 transition-colors">
+                            <div class="flex items-center">
+                                <span class="bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">${index + 1}</span>
+                                <div>
+                                    <span class="font-semibold text-red-800">${review.concept_name}</span>
+                                    <p class="text-xs text-red-600 mt-1">You got ${Math.round(review.accuracy * 100)}% correct on related questions</p>
+                                </div>
+                            </div>
+                            <span class="material-icons text-red-500">arrow_forward</span>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p class="text-sm text-blue-800 font-medium mb-2">📚 How This Review Works:</p>
+                    <p class="text-sm text-blue-700">Each concept below includes explanations based on the materials your teacher provided. Read through each one carefully - understanding these will help you improve your performance on future quizzes.</p>
+                </div>
+            </div>
+        `;
+
+        // Step 2: Detailed explanations for each weak concept
+        const detailedExplanations = `
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                    <span class="material-icons text-blue-600 mr-3">school</span>
+                    Step 2: Detailed Concept Explanations
+                </h3>
+                <div class="space-y-6">
+                    ${conceptReview.concept_reviews.map((review, index) => `
+                        <div class="bg-white border-2 border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                            <!-- Concept Header -->
+                            <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <span class="bg-white text-blue-600 rounded-full w-10 h-10 flex items-center justify-center text-lg font-bold mr-4">${index + 1}</span>
+                                        <div>
+                                            <h4 class="text-xl font-bold text-white">${review.title || `Understanding ${review.concept_name}`}</h4>
+                                            <p class="text-blue-100 text-sm">Based on your quiz performance (${Math.round(review.accuracy * 100)}% accuracy)</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-white text-sm">Your Score</div>
+                                        <div class="text-2xl font-bold text-white">${Math.round(review.accuracy * 100)}%</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Concept Content -->
+                            <div class="p-6 space-y-6">
+                                <!-- Key Points -->
+                                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                                    <h5 class="font-semibold text-green-800 mb-3 flex items-center">
+                                        <span class="material-icons text-green-600 mr-2">check_circle</span>
+                                        Key Points to Remember
+                                    </h5>
+                                    <ul class="space-y-2">
+                                        ${review.key_points.map(point => `
+                                            <li class="flex items-start">
+                                                <span class="text-green-600 mr-2 mt-1">•</span>
+                                                <span class="text-sm text-green-800">${point}</span>
+                                            </li>
+                                        `).join('')}
+                                    </ul>
+                                </div>
+
+                                <!-- Detailed Explanation -->
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <h5 class="font-semibold text-blue-800 mb-3 flex items-center">
+                                        <span class="material-icons text-blue-600 mr-2">lightbulb</span>
+                                        Detailed Explanation
+                                    </h5>
+                                    <div class="text-sm text-blue-900 leading-relaxed">
+                                        ${review.explanation}
+                                    </div>
+                                </div>
+
+                                <!-- Practice Tip -->
+                                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                    <h5 class="font-semibold text-purple-800 mb-3 flex items-center">
+                                        <span class="material-icons text-purple-600 mr-2">tips_and_updates</span>
+                                        Practice Tip
+                                    </h5>
+                                    <div class="bg-white p-3 rounded border border-purple-200">
+                                        <p class="text-sm text-purple-900">${review.practice_tip}</p>
+                                    </div>
+                                </div>
+
+                                <!-- Common Mistakes -->
+                                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                                    <h5 class="font-semibold text-red-800 mb-3 flex items-center">
+                                        <span class="material-icons text-red-600 mr-2">warning</span>
+                                        Common Mistakes to Avoid
+                                    </h5>
+                                    <ul class="space-y-2">
+                                        ${review.common_mistakes.map(mistake => `
+                                            <li class="flex items-start">
+                                                <span class="text-red-600 mr-2 mt-1">⚠</span>
+                                                <span class="text-sm text-red-800">${mistake}</span>
+                                            </li>
+                                        `).join('')}
+                                    </ul>
+                                </div>
+
+                                <!-- Understanding Check -->
+                                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                    <h5 class="font-semibold text-gray-800 mb-3 flex items-center">
+                                        <span class="material-icons text-gray-600 mr-2">quiz</span>
+                                        Quick Check: Do You Understand?
+                                    </h5>
+                                    <p class="text-sm text-gray-700 mb-3">Before moving on, make sure you can explain this concept in your own words.</p>
+                                    <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                                        <span class="material-icons mr-1 text-sm">check</span>
+                                        I Understand This Concept
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+
+        // Step 3: Action items and next steps
+        const nextSteps = `
+            <div class="bg-green-50 border border-green-200 rounded-lg p-6">
+                <h3 class="text-lg font-bold text-green-800 mb-4 flex items-center">
+                    <span class="material-icons text-green-600 mr-2">flag</span>
+                    Next Steps to Improve
+                </h3>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div class="bg-white p-4 rounded border border-green-200">
+                        <h4 class="font-semibold text-green-800 mb-2">📖 Review Materials</h4>
+                        <p class="text-sm text-green-700">Go back to the assignment materials and re-read the sections covering these concepts.</p>
+                    </div>
+                    <div class="bg-white p-4 rounded border border-green-200">
+                        <h4 class="font-semibold text-green-800 mb-2">✏️ Practice More</h4>
+                        <p class="text-sm text-green-700">Try additional practice questions on these topics before your next quiz.</p>
+                    </div>
+                    <div class="bg-white p-4 rounded border border-green-200">
+                        <h4 class="font-semibold text-green-800 mb-2">💬 Ask for Help</h4>
+                        <p class="text-sm text-green-700">If you're still confused, reach out to your teacher or classmates for clarification.</p>
+                    </div>
+                    <div class="bg-white p-4 rounded border border-green-200">
+                        <h4 class="font-semibold text-green-800 mb-2">🔄 Retake Quiz</h4>
+                        <p class="text-sm text-green-700">Once you feel confident, retake this quiz to test your improvement.</p>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        conceptReviewContent.innerHTML = recommendationHTML + weakConceptsOverview + detailedExplanations + nextSteps;
+    }
+
+    setupConceptReviewToggles() {
+        const conceptHeaders = document.querySelectorAll('.concept-header');
+        conceptHeaders.forEach(header => {
+            header.addEventListener('click', () => {
+                const conceptIndex = header.dataset.conceptIndex;
+                const details = document.querySelector(`.concept-details[data-concept-index="${conceptIndex}"]`);
+                const expandIcon = header.querySelector('.expand-icon');
+
+                if (details.classList.contains('hidden')) {
+                    details.classList.remove('hidden');
+                    expandIcon.textContent = 'expand_less';
+                } else {
+                    details.classList.add('hidden');
+                    expandIcon.textContent = 'expand_more';
+                }
+            });
+        });
     }
 
     showErrorState(message = 'An error occurred while loading the quiz results.') {

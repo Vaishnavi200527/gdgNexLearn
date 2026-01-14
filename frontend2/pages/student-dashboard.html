@@ -428,6 +428,30 @@
         </footer>
     </div>
     
+    <!-- Adaptive Learning Reteach Modal -->
+    <div id="remedialModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); backdrop-filter: blur(4px);">
+      <div class="modal-content" style="background-color: #fff; margin: 10% auto; padding: 0; border: none; width: 90%; max-width: 600px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); font-family: 'Segoe UI', sans-serif;">
+
+        <!-- Header -->
+        <div style="background-color: #4f46e5; padding: 20px; border-top-left-radius: 12px; border-top-right-radius: 12px; color: white;">
+          <h2 style="margin: 0; font-size: 1.5rem;">💡 Let's Review This Concept</h2>
+          <p style="margin: 5px 0 0 0; opacity: 0.9;">It looks like you found this topic tricky. Here is a simpler explanation.</p>
+        </div>
+
+        <!-- Body -->
+        <div id="remedialContent" style="padding: 25px; color: #333; line-height: 1.6;">
+          <!-- Content injected via JS -->
+        </div>
+
+        <!-- Footer -->
+        <div style="padding: 20px; background-color: #f9fafb; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; text-align: right; border-top: 1px solid #eee;">
+          <button onclick="document.getElementById('remedialModal').style.display='none'" style="background-color: #4f46e5; color: white; padding: 10px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 1rem; transition: background 0.2s;">
+            Got it, thanks!
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Mobile Navigation Overlay -->
     <div id="mobile-nav-overlay" class="fixed inset-0 bg-black/80 z-50 hidden md:hidden">
         <div class="flex flex-col h-full">

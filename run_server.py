@@ -11,24 +11,15 @@ def setup_database():
     backend_path = os.path.join(os.path.dirname(__file__), 'backend')
     sys.path.insert(0, backend_path)
     
-    # Check if database file exists
-    db_path = Path("backend/learning.db")
-    if not db_path.exists():
-        print("Database file not found, creating new database...")
-        
-        # Import and run database reset
-        from backend.database_reset import reset_database
-        reset_database()
-        
-        # Import and run seed data
-        from backend.seed_data import seed_database
-        seed_database()
-    else:
-        print("Database file already exists.")
-        
-        # Always run seed data to ensure data exists
-        from backend.seed_data import seed_database
-        seed_database()
+    # Import and run database reset and seeding
+    print("Clearing and re-seeding database...")
+    from backend.clear_db import clear_data
+    from backend.seed_data import seed_database
+    
+    clear_data()
+    seed_database()
+    
+    print("Database setup complete.")
 
 def run_server():
     """Run the FastAPI server"""

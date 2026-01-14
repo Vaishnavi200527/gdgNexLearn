@@ -18,6 +18,7 @@ class EngagementType(str, enum.Enum):
     DISCUSSION = "discussion"
 
 class AssignmentStatus(str, enum.Enum):
+    NOT_STARTED = "not_started"
     ASSIGNED = "assigned"
     SUBMITTED = "submitted"
     COMPLETED = "completed"
@@ -68,6 +69,7 @@ class Concept(Base):
     mastery_scores = relationship("MasteryScores", back_populates="concept")
     student_mastery_scores = relationship("StudentMastery", back_populates="concept")
     questions = relationship("Question", back_populates="concept")
+    assignments = relationship("Assignments", back_populates="concept")
 
 
 
@@ -120,7 +122,7 @@ class Attempt(Base):
 
 class Assignments(Base):
     __tablename__ = "assignments"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     concept_id = Column(Integer, ForeignKey("concepts.id"))
     teacher_id = Column(Integer, ForeignKey("users.id"), nullable=True)
@@ -128,8 +130,10 @@ class Assignments(Base):
     content_url = Column(String)
     title = Column(String, nullable=False)
     description = Column(String)
-    
+    learning_objectives = Column(JSON, default=list)
+
     # Relationships
+    concept = relationship("Concept", back_populates="assignments")
     student_assignments = relationship("StudentAssignments", back_populates="assignment")
 
 class StudentAssignments(Base):

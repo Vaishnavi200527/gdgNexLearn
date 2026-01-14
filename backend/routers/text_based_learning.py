@@ -82,13 +82,13 @@ async def process_pdf_text_based(
             )
             
             # Create or update concept in database
-            concept = db.query(models.Concepts).filter(
-                models.Concepts.name.ilike(concept_data['name'])
+            concept = db.query(models.Concept).filter(
+                models.Concept.concept_name.ilike(concept_data['name'])
             ).first()
             
             if not concept:
-                concept = models.Concepts(
-                    name=concept_data['name'],
+                concept = models.Concept(
+                    concept_name=concept_data['name'],
                     description=explanation_data['definition'],
                     irt_difficulty=0.5 if concept_data.get('complexity') == 'easy' else 
                                   0.7 if concept_data.get('complexity') == 'medium' else 0.9,
@@ -108,7 +108,7 @@ async def process_pdf_text_based(
             
             processed_concepts.append({
                 "concept_id": concept.id,
-                "name": concept.name,
+                "name": concept.concept_name,
                 "explanation_id": stored_explanation.id,
                 "complexity": explanation_data.get('complexity_level', 'medium'),
                 "word_count": explanation_data.get('word_count', 0)
@@ -209,7 +209,7 @@ async def get_all_concepts(
     """
     Get all concepts with pagination
     """
-    concepts = db.query(models.Concepts).offset(offset).limit(limit).all()
+    concepts = db.query(models.Concept).offset(offset).limit(limit).all()
     
     concept_list = []
     storage = ConceptExplanationStorage(db)
@@ -220,7 +220,7 @@ async def get_all_concepts(
         
         concept_list.append({
             "id": concept.id,
-            "name": concept.name,
+            "name": concept.concept_name,
             "description": concept.description,
             "id_slug": concept.id_slug,
             "irt_difficulty": concept.irt_difficulty,
@@ -246,7 +246,7 @@ async def get_concept_statistics(db: Session = Depends(get_db)):
     stats = storage.get_explanation_statistics()
     
     # Additional statistics
-    total_concepts = db.query(models.Concepts).count()
+    total_concepts = db.query(models.Concept).count()
     total_documents = db.query(models.PDFDocuments).count()
     
     return {
@@ -316,7 +316,7 @@ async def get_document_info(
     
     # Get associated concepts
     concept_ids = document.concept_ids or []
-    concepts = db.query(models.Concepts).filter(models.Concepts.id.in_(concept_ids)).all()
+    concepts = db.query(models.Concept).filter(models.Concept.id.in_(concept_ids)).all()
     
     return {
         "success": True,
@@ -330,7 +330,7 @@ async def get_document_info(
             "concepts": [
                 {
                     "id": concept.id,
-                    "name": concept.name,
+                    "name": concept.concept_name,
                     "description": concept.description
                 }
                 for concept in concepts
@@ -347,7 +347,7 @@ async def get_learning_path(
     Generate a learning path for a concept including prerequisites and related concepts
     """
     # Get the main concept
-    concept = db.query(models.Concepts).filter(models.Concepts.id == concept_id).first()
+    concept = db.query(models.Concept).filter(models.Concept.id == concept_id).first()
     if not concept:
         raise HTTPException(404, f"Concept {concept_id} not found")
     
@@ -363,15 +363,15 @@ async def get_learning_path(
     
     for prereq in prerequisites:
         # Try to find matching concepts
-        prereq_concept = db.query(models.Concepts).filter(
-            models.Concepts.name.ilike(f'%{prereq}%')
+        prereq_concept = db.query(models.Concept).filter(
+            models.Concept.concept_name.ilike(f'%{prereq}%')
         ).first()
         
         if prereq_concept:
             prereq_explanation = storage.get_concept_explanation(prereq_concept.id, 'basic')
             prerequisite_concepts.append({
                 "id": prereq_concept.id,
-                "name": prereq_concept.name,
+                "name": prereq_concept.concept_name,
                 "description": prereq_explanation.get('definition', '') if prereq_explanation else '',
                 "complexity": prereq_explanation.get('complexity_level', 'medium') if prereq_explanation else 'medium'
             })
@@ -387,15 +387,15 @@ async def get_learning_path(
             # Extract name from "Name: description" format
             term_name = term.split(':')[0] if ':' in term else term
         
-        related_concept = db.query(models.Concepts).filter(
-            models.Concepts.name.ilike(f'%{term_name}%')
+        related_concept = db.query(models.Concept).filter(
+            models.Concept.concept_name.ilike(f'%{term_name}%')
         ).first()
         
         if related_concept and related_concept.id != concept_id:
             related_explanation = storage.get_concept_explanation(related_concept.id, 'basic')
             related_concepts.append({
                 "id": related_concept.id,
-                "name": related_concept.name,
+                "name": related_concept.concept_name,
                 "description": related_explanation.get('definition', '') if related_explanation else '',
                 "complexity": related_explanation.get('complexity_level', 'medium') if related_explanation else 'medium'
             })
@@ -404,7 +404,7 @@ async def get_learning_path(
         "success": True,
         "main_concept": {
             "id": concept.id,
-            "name": concept.name,
+            "name": concept.concept_name,
             "description": explanation.get('definition', ''),
             "complexity": explanation.get('complexity_level', 'medium'),
             "word_count": explanation.get('word_count', 0)

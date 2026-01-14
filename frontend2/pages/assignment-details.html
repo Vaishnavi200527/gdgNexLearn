@@ -86,18 +86,18 @@ AMEP
 <span class="text-[#9cbab7] text-sm font-medium leading-normal">/</span>
 <a class="text-[#9cbab7] text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">Assignments</a>
 <span class="text-[#9cbab7] text-sm font-medium leading-normal">/</span>
-<span class="text-white text-sm font-medium leading-normal">Generative Art with p5.js</span>
+<span id="breadcrumb-assignment-title" class="text-white text-sm font-medium leading-normal">Generative Art with p5.js</span>
 </div>
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 <!-- Left Column: Information -->
 <div class="flex flex-col gap-8">
 <div>
-<h1 class="text-white text-4xl lg:text-5xl font-black tracking-tighter text-shadow-[0_0_15px_rgba(13,242,223,0.4)]">Assignment: Generative Art with p5.js</h1>
-<p class="text-[#9cbab7] text-base font-normal leading-normal mt-3">Due: Dec 15, 2024 | <span class="text-yellow-400">In Progress</span> | 100 Points</p>
+<h1 id="assignment-title" class="text-white text-4xl lg:text-5xl font-black tracking-tighter text-shadow-[0_0_15px_rgba(13,242,223,0.4)]">Assignment: Generative Art with p5.js</h1>
+<p id="assignment-meta" class="text-[#9cbab7] text-base font-normal leading-normal mt-3">Due: Dec 15, 2024 | <span class="text-yellow-400">In Progress</span> | 100 Points</p>
 </div>
 <div class="bg-white/5 backdrop-blur-md rounded-xl border border-white/10 p-6">
 <h2 class="text-white text-xl font-bold mb-3">Description</h2>
-<p class="text-[#c1d3d1] text-base font-normal leading-relaxed">This assignment challenges you to create a dynamic, interactive piece of generative art using the p5.js library. Explore concepts of randomness, loops, and user input to build a unique visual experience. The goal is to apply fundamental programming concepts in a creative context.</p>
+<p id="assignment-description" class="text-[#c1d3d1] text-base font-normal leading-relaxed">This assignment challenges you to create a dynamic, interactive piece of generative art using the p5.js library. Explore concepts of randomness, loops, and user input to build a unique visual experience. The goal is to apply fundamental programming concepts in a creative context.</p>
 </div>
 
 <!-- PDF Display Section - Always visible -->
@@ -120,55 +120,8 @@ Original Assignment Materials (PDF)
 </div>
 <div class="flex flex-col gap-4">
 <h2 class="text-white text-xl font-bold">Learning Objectives</h2>
-<div class="grid sm:grid-cols-2 gap-4">
-<div class="relative p-5 bg-[#1a2e2c] border border-primary/50 rounded-lg overflow-hidden transition-all hover:border-primary">
-<div class="absolute -top-1 -right-1 w-16 h-16 bg-primary/20 rounded-bl-full blur-2xl"></div>
-<div class="flex items-center gap-4">
-<div class="flex-shrink-0 text-primary">
-<span class="material-symbols-outlined text-3xl">code</span>
-</div>
-<div>
-<h3 class="font-bold text-white">p5.js Basics</h3>
-<p class="text-sm text-[#9cbab7]">Understand the setup and draw loops.</p>
-</div>
-</div>
-</div>
-<div class="relative p-5 bg-[#1a2e2c] border border-primary/50 rounded-lg overflow-hidden transition-all hover:border-primary">
-<div class="absolute -top-1 -right-1 w-16 h-16 bg-primary/20 rounded-bl-full blur-2xl"></div>
-<div class="flex items-center gap-4">
-<div class="flex-shrink-0 text-primary">
-<span class="material-symbols-outlined text-3xl">gesture</span>
-</div>
-<div>
-<h3 class="font-bold text-white">Interactivity</h3>
-<p class="text-sm text-[#9cbab7]">Use mouse and keyboard inputs.</p>
-</div>
-</div>
-</div>
-<div class="relative p-5 bg-[#1a2e2c] border border-primary/50 rounded-lg overflow-hidden transition-all hover:border-primary">
-<div class="absolute -top-1 -right-1 w-16 h-16 bg-primary/20 rounded-bl-full blur-2xl"></div>
-<div class="flex items-center gap-4">
-<div class="flex-shrink-0 text-primary">
-<span class="material-symbols-outlined text-3xl">shuffle</span>
-</div>
-<div>
-<h3 class="font-bold text-white">Randomness</h3>
-<p class="text-sm text-[#9cbab7]">Implement random functions for variety.</p>
-</div>
-</div>
-</div>
-<div class="relative p-5 bg-[#1a2e2c] border border-primary/50 rounded-lg overflow-hidden transition-all hover:border-primary">
-<div class="absolute -top-1 -right-1 w-16 h-16 bg-primary/20 rounded-bl-full blur-2xl"></div>
-<div class="flex items-center gap-4">
-<div class="flex-shrink-0 text-primary">
-<span class="material-symbols-outlined text-3xl">palette</span>
-</div>
-<div>
-<h3 class="font-bold text-white">Color Theory</h3>
-<p class="text-sm text-[#9cbab7]">Apply color to create mood and focus.</p>
-</div>
-</div>
-</div>
+<div id="learning-objectives-container" class="grid sm:grid-cols-2 gap-4">
+<!-- Learning objectives will be dynamically inserted here -->
 </div>
 </div>
 </div>
@@ -243,6 +196,7 @@ AMEP
 
     // --- State Management ---
     let quizDataStore = null;
+    let currentConceptName = 'Current Topic';
 
     // --- DOM Elements ---
     // --- UI Update Functions ---
@@ -266,13 +220,50 @@ AMEP
         }
     }
 
+    function updateLearningObjectives(objectives) {
+        const container = document.getElementById('learning-objectives-container');
+        if (!container) return;
+
+        container.innerHTML = ''; // Clear existing objectives
+
+        if (!objectives || objectives.length === 0) {
+            container.innerHTML = '<p class="text-[#9cbab7] col-span-2">No specific learning objectives have been set for this assignment.</p>';
+            return;
+        }
+
+        objectives.forEach(obj => {
+            const objectiveEl = document.createElement('div');
+            objectiveEl.className = 'relative p-5 bg-[#1a2e2c] border border-primary/50 rounded-lg overflow-hidden transition-all hover:border-primary';
+            objectiveEl.innerHTML = `
+                <div class="absolute -top-1 -right-1 w-16 h-16 bg-primary/20 rounded-bl-full blur-2xl"></div>
+                <div class="flex items-center gap-4">
+                    <div class="flex-shrink-0 text-primary">
+                        <span class="material-symbols-outlined text-3xl">${obj.icon || 'school'}</span>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-white">${obj.title}</h3>
+                        <p class="text-sm text-[#9cbab7]">${obj.description}</p>
+                    </div>
+                </div>
+            `;
+            container.appendChild(objectiveEl);
+        });
+    }
+
     function updateAssignmentDetails(assignment) {
-        const titleElement = document.querySelector('h1.text-white.text-4xl');
+        document.title = `AMEP - ${assignment.title}`;
+
+        const breadcrumbElement = document.getElementById('breadcrumb-assignment-title');
+        if (breadcrumbElement) {
+            breadcrumbElement.textContent = assignment.title;
+        }
+        
+        const titleElement = document.getElementById('assignment-title');
         if (titleElement) {
             titleElement.textContent = `Assignment: ${assignment.title}`;
         }
 
-        const metaElement = document.querySelector('p.text-\\[\\#9cbab7\\].text-base');
+        const metaElement = document.getElementById('assignment-meta');
         if (metaElement) {
             const statusClass = {
                 'completed': 'text-green-400',
@@ -284,7 +275,7 @@ AMEP
             metaElement.innerHTML = `Due: ${assignment.dueDate} | <span class="${statusClass}">${assignment.status}</span> | ${assignment.points} Points`;
         }
 
-        const descriptionElement = document.querySelector('.bg-white\\/5.p-6 p');
+        const descriptionElement = document.getElementById('assignment-description');
         if (descriptionElement) {
             descriptionElement.textContent = assignment.description;
         }
@@ -451,6 +442,9 @@ AMEP
         try {
             const assignment = await studentAPI.getAssignmentById(id);
             const conceptsData = await studentAPI.getAssignmentConcepts(id, 'comprehensive');
+            if (conceptsData && conceptsData.concept_name) {
+                currentConceptName = conceptsData.concept_name;
+            }
             
             const transformedAssignment = {
                 title: assignment.title,
@@ -458,14 +452,11 @@ AMEP
                 dueDate: assignment.due_date ? new Date(assignment.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A',
                 status: assignment.status || 'In Progress',
                 points: assignment.score !== null ? assignment.score : (assignment.points || 100),
-                objectives: [
-                    'Demonstrate understanding of core concepts',
-                    'Apply knowledge to solve practical problems',
-                    'Develop critical thinking skills'
-                ]
+                objectives: assignment.learning_objectives || []
             };
             
             updateAssignmentDetails(transformedAssignment);
+            updateLearningObjectives(transformedAssignment.objectives);
             
             if (conceptsData && conceptsData.success && conceptsData.explanation) {
                 updateConceptExplanations(conceptsData.explanation, conceptsData.mastery_score);
@@ -568,18 +559,134 @@ AMEP
 
     function showQuizResults(result) {
         const quizContent = document.getElementById('quiz-content');
-        let resultHTML = `<div class="text-center py-6"><div class="text-6xl mb-4">${result.score >= 70 ? '🎉' : '📚'}</div><h3 class="text-2xl font-bold text-white mb-2">${result.score >= 70 ? 'Congratulations!' : 'Keep Learning!'}</h3><p class="text-[#c1d3d1] text-lg mb-4">You scored ${result.score}% on the knowledge check.</p><div class="bg-[#1a2e2c] p-4 rounded-lg border border-primary/20 mb-4"><p class="text-[#9cbab7] text-sm">Correct answers: ${result.correct}/${result.total}</p></div>`;
-        if (result.score >= 70) {
-            resultHTML += `<p class="text-[#c1d3d1] mb-4">Great job! You've demonstrated good understanding of the concepts. Your assignment has been marked as complete.</p><button onclick="window.location.reload()" class="bg-primary text-background-dark px-6 py-2 rounded-lg font-semibold hover:bg-opacity-80 transition-opacity">Return to Assignment</button>`;
-        } else {
-            resultHTML += `<p class="text-[#c1d3d1] mb-4">You might want to review the concepts and try again. Check the AI-powered explanations above for additional guidance.</p><button onclick="window.location.reload()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors">Review and Try Again</button>`;
-        }
-        resultHTML += `</div>`;
-        quizContent.innerHTML = resultHTML;
         
+        // 1. Question Breakdown
+        let questionsHtml = '';
+        if (result.question_results && result.question_results.length > 0) {
+            questionsHtml += '<div class="mb-8 space-y-3">';
+            questionsHtml += '<h3 class="text-xl font-bold text-white mb-4">Question Review</h3>';
+            
+            result.question_results.forEach((q, index) => {
+                const isCorrect = q.is_correct;
+                const borderColor = isCorrect ? 'border-green-500/30' : 'border-red-500/30';
+                const bgColor = isCorrect ? 'bg-green-900/10' : 'bg-red-900/10';
+                const icon = isCorrect ? 'check_circle' : 'cancel';
+                const iconColor = isCorrect ? 'text-green-400' : 'text-red-400';
+                
+                questionsHtml += `
+                    <div class="p-4 rounded-lg border ${borderColor} ${bgColor} flex gap-4 transition-all">
+                        <span class="material-symbols-outlined ${iconColor} mt-0.5 flex-shrink-0">${icon}</span>
+                        <div class="flex-grow">
+                            <p class="text-white font-medium mb-3 text-base">${index + 1}. ${q.question_text}</p>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                                <div class="bg-black/20 p-2 rounded border border-white/5">
+                                    <span class="text-[#9cbab7] block text-xs uppercase tracking-wider mb-1">Your Answer</span>
+                                    <span class="${isCorrect ? 'text-green-300' : 'text-red-300'} font-medium">${q.user_answer || 'No Answer'}</span>
+                                </div>
+                                ${!isCorrect ? `
+                                <div class="bg-black/20 p-2 rounded border border-white/5">
+                                    <span class="text-[#9cbab7] block text-xs uppercase tracking-wider mb-1">Correct Answer</span>
+                                    <span class="text-green-300 font-medium">${q.correct_answer}</span>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            questionsHtml += '</div>';
+        }
+
+        // Score Section
+        let html = `
+            <div class="text-center py-8 border-b border-white/10 mb-8">
+                <div class="text-6xl mb-4 animate-bounce-in">${result.score >= 70 ? '🎉' : '📚'}</div>
+                <h3 class="text-3xl font-bold text-white mb-2">${result.score >= 70 ? 'Congratulations!' : 'Keep Learning!'}</h3>
+                <p class="text-[#c1d3d1] text-xl mb-6">You scored <span class="${result.score >= 70 ? 'text-green-400' : 'text-yellow-400'} font-bold">${result.score}%</span></p>
+                <div class="bg-[#1a2e2c] px-6 py-3 rounded-full border border-primary/20 inline-block">
+                    <p class="text-[#9cbab7] text-sm font-medium">Correct answers: <span class="text-white">${result.correct}/${result.total}</span></p>
+                </div>
+            </div>
+            ${questionsHtml}
+        `;
+
         const submitQuizBtn = document.getElementById('submit-quiz-btn');
         if (submitQuizBtn) submitQuizBtn.style.display = 'none';
+
+        // Remedial Section (Inline)
+        if (result.remedial_content) {
+            const content = result.remedial_content;
+            html += `
+                <div class="mt-6 border-t border-white/10 pt-6 animate-fade-in">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="material-symbols-outlined text-red-400 text-3xl">warning</span>
+                        <div>
+                            <h3 class="text-xl font-bold text-white">Concept Needing Review</h3>
+                            <p class="text-red-300 font-medium text-lg">${currentConceptName}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-[#162928] rounded-xl border border-primary/30 overflow-hidden">
+                        <div class="p-6">
+                            <h4 class="text-primary font-bold text-lg mb-3 flex items-center gap-2">
+                                <span class="material-symbols-outlined">lightbulb</span> Simplified Explanation
+                            </h4>
+                            <p class="text-[#c1d3d1] leading-relaxed mb-6 text-lg">${content.simplified_explanation}</p>
+                            
+                            <h4 class="text-white font-bold text-lg mb-3 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-yellow-400">science</span> Real-World Example
+                            </h4>
+                            <div class="bg-black/30 p-4 rounded-lg border-l-4 border-yellow-400 mb-6">
+                                <p class="text-[#e2e8f0] italic">"${content.simple_example}"</p>
+                            </div>
+                            
+                            ${content.key_terms && content.key_terms.length > 0 ? `
+                                <h4 class="text-white font-bold text-lg mb-3">Key Terms</h4>
+                                <div class="flex flex-wrap gap-2">
+                                    ${content.key_terms.map(term => `<span class="px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-full text-sm font-medium">${term}</span>`).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="bg-black/20 p-6 border-t border-white/5 flex flex-col items-center justify-center gap-4">
+                            <p class="text-[#9cbab7] text-sm">Please confirm you have reviewed this concept before retaking the quiz.</p>
+                            
+                            <button id="acknowledge-btn" onclick="window.acknowledgeRemedial()" class="flex items-center gap-2 bg-primary text-background-dark px-8 py-3 rounded-lg font-bold hover:bg-opacity-90 transition-all shadow-glow-primary transform hover:scale-105">
+                                <span class="material-symbols-outlined">check_circle</span>
+                                I Understood
+                            </button>
+                            
+                            <button id="reattempt-btn" onclick="window.location.reload()" class="hidden flex items-center gap-2 bg-white/10 text-white border border-white/20 px-8 py-3 rounded-lg font-semibold hover:bg-white/20 transition-all">
+                                <span class="material-symbols-outlined">refresh</span>
+                                Reattempt Quiz
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            // Standard buttons if no remedial content (e.g. passed)
+             if (result.score >= 70) {
+                html += `<div class="flex justify-center mt-4"><button onclick="window.location.reload()" class="bg-primary text-background-dark px-6 py-2 rounded-lg font-semibold hover:bg-opacity-80 transition-opacity">Return to Assignment</button></div>`;
+            } else {
+                html += `<div class="flex justify-center mt-4"><button onclick="window.location.reload()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors">Review and Try Again</button></div>`;
+            }
+        }
+
+        quizContent.innerHTML = html;
     }
+
+    // Add acknowledge function to window
+    window.acknowledgeRemedial = function() {
+        const ackBtn = document.getElementById('acknowledge-btn');
+        const reattemptBtn = document.getElementById('reattempt-btn');
+        
+        if (ackBtn && reattemptBtn) {
+            ackBtn.style.display = 'none';
+            reattemptBtn.classList.remove('hidden');
+            reattemptBtn.classList.add('flex');
+        }
+    };
 
     // --- Mobile Nav & Auth ---
     function setupMobileNavigation() {

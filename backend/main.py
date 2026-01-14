@@ -16,38 +16,37 @@ from routers.classes import router as classes_router  # Add this import
 
 # Import models to register them with SQLAlchemy Base
 import models
-from database import engine
+from database import engine, SessionLocal
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from database import Base
+    from database import Base, engine
+    from seed_data import seed_database
+    
+    print("--- Running Database Reset ---")
+    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
-    print("Database tables created on startup")
+    print("--- Database Tables Reset ---")
+
+    print("--- Seeding Database ---")
+    seed_database()
+    print("--- Database Seeding Complete ---")
+        
     yield
 
 app = FastAPI(title="AI-Powered Adaptive Learning Platform", lifespan=lifespan)
 
-# Origins for CORS
-origins = [
-    "http://localhost",
-    "http://localhost:5173",  # Origin from the error message
-    "http://localhost:5174",  # Vite dev server port
-    "http://localhost:8080",  # Common dev server port
-    "http://127.0.0.1:5500",  # VS Code Live Server
-    "http://127.0.0.1:5173",  # Vite local IP
-    "http://127.0.0.1:5174",  # Vite dev server IP
-    "http://localhost:5173",  # Added for Vite frontend
-    "http://localhost:5174",  # Added for Vite frontend
-]
+# Origins for CORS - Allow all origins for development
+origins = ["*"]
 
-# Add CORS middleware
+# Add CORS middleware with permissive settings for development
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex=r"https?://localhost:\d+",
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Mount static files

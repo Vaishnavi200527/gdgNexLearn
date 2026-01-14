@@ -81,7 +81,7 @@ def test_mastery_updates():
         # Use a valid student and concept ID that exist in the database
         # For this test, we'll use existing data from the seed data
         student = db.query(models.Users).filter(models.Users.role == "student").first()
-        concept = db.query(models.Concepts).first()
+        concept = db.query(models.Concept).first()
         
         if student and concept:
             print(f"Testing with student ID: {student.id}, concept ID: {concept.id}")

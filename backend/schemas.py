@@ -14,6 +14,7 @@ class EngagementType(str, Enum):
     DISCUSSION = "discussion"
 
 class AssignmentStatus(str, Enum):
+    NOT_STARTED = "not_started"
     ASSIGNED = "assigned"
     SUBMITTED = "submitted"
     COMPLETED = "completed"
@@ -79,6 +80,7 @@ class AssignmentCreate(AssignmentBase):
 
 class AssignmentResponse(AssignmentBase):
     id: int
+    learning_objectives: List[Dict[str, Any]] = []
     
     class Config:
         from_attributes = True
@@ -411,6 +413,7 @@ class StudentAssignmentDetail(AssignmentResponse):
     score: Optional[float] = None
     submitted_at: Optional[datetime] = None
     due_date: Optional[datetime] = None
+    learning_objectives: List[Dict[str, Any]] = []
     
     class Config:
         from_attributes = True
@@ -493,9 +496,36 @@ class StudentQuizBase(BaseModel):
 class StudentQuizCreate(StudentQuizBase):
     pass
 
+class QuestionReviewItem(BaseModel):
+    question_id: int
+    question_text: str
+    student_answer: Optional[str] = None
+    correct_answer: str
+    is_correct: bool
+    explanation: Optional[str] = None
+    concept_name: Optional[str] = None
+    concept_id: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+class ConceptReviewItem(BaseModel):
+    title: str
+    key_points: List[str]
+    explanation: str
+    common_mistakes: List[str]
+    practice_tip: str
+    real_world_examples: List[str] = []
+
+class ConceptReview(BaseModel):
+    recommendation: Optional[str] = None
+    concept_reviews: List[ConceptReviewItem] = []
+
 class StudentQuizResponse(StudentQuizBase):
     id: int
     submitted_at: Optional[datetime] = None
+    concept_review: Optional[ConceptReview] = None
+    question_reviews: Optional[List[QuestionReviewItem]] = None
 
     class Config:
         from_attributes = True

@@ -126,7 +126,7 @@ def get_class_dashboard(teacher_id: int, db: Session) -> Dict:
     
     # Get concept names
     concept_ids = list(concept_mastery.keys())
-    concepts = db.query(models.Concepts).filter(models.Concepts.id.in_(concept_ids)).all()
+    concepts = db.query(models.Concept).filter(models.Concept.id.in_(concept_ids)).all()
     for concept in concepts:
         if concept.id in concept_mastery:
             concept_mastery[concept.id]["concept_name"] = concept.name
@@ -277,7 +277,7 @@ def get_detailed_student_insights(student_id: int, db: Session) -> Dict:
     weaknesses = []
     
     for record in mastery_records:
-        concept = db.query(models.Concepts).filter(models.Concepts.id == record.concept_id).first()
+        concept = db.query(models.Concept).filter(models.Concept.id == record.concept_id).first()
         if concept:
             if record.mastery_score >= 80:
                 strengths.append({
@@ -330,7 +330,7 @@ def get_class_performance_analytics(teacher_id: int, db: Session) -> Dict:
     # Calculate concept analytics
     concept_data = {}
     for record in mastery_records:
-        concept = db.query(models.Concepts).filter(models.Concepts.id == record.concept_id).first()
+        concept = db.query(models.Concept).filter(models.Concept.id == record.concept_id).first()
         if concept:
             if concept.id not in concept_data:
                 concept_data[concept.id] = {
@@ -413,7 +413,7 @@ def get_class_intervention_summary(teacher_id: int, db: Session) -> Dict:
     for intervention in interventions:
         concept_name = "General"  # Default
         if intervention.concept_id:
-            concept = db.query(models.Concepts).filter(models.Concepts.id == intervention.concept_id).first()
+            concept = db.query(models.Concept).filter(models.Concept.id == intervention.concept_id).first()
             if concept:
                 concept_name = concept.name
         
